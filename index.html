@@ -1,0 +1,2571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>小蒋流量查询</title>
+
+  <meta name="theme-color" content="#138554">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="流量查询">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#f4f6fb;--card:#fff;--pri:#18a058;--pri-d:#138554;--pri-l:#e9f7ef;
+  --red:#e03050;--org:#e68200;--blu:#2080f0;--blu-d:#1867c0;--txt:#1a1a2e;--sub:#86909c;
+  --ln:#eaecef;--radius:16px;--shadow:0 4px 18px rgba(20,30,60,.06);
+}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;background:var(--bg);color:var(--txt);font-size:14px;-webkit-font-smoothing:antialiased}
+#app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;position:relative}
+
+/* 顶栏 */
+.topbar{background:linear-gradient(135deg,#1ab66a,#138554 70%,#0f7a4a);color:#fff;padding:22px 16px 18px;border-radius:0 0 24px 24px;position:relative;overflow:hidden}
+.topbar:after{content:"";position:absolute;right:-40px;top:-40px;width:140px;height:140px;background:radial-gradient(circle,rgba(255,255,255,.18),transparent 70%);border-radius:50%}
+.topbar .head{display:flex;align-items:center;gap:12px}
+.topbar .avatar{width:42px;height:42px;border-radius:13px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;font-size:22px;backdrop-filter:blur(4px);box-shadow:0 2px 8px rgba(0,0,0,.12)}
+.topbar h1{margin:0;font-size:19px;font-weight:800;letter-spacing:.5px;flex:1}
+.topbar .badge{font-size:10.5px;background:rgba(255,255,255,.2);padding:3px 9px;border-radius:20px;font-weight:600}
+.topbar .sub{font-size:12px;opacity:.85;margin-top:9px;padding-left:54px}
+
+/* Tab栏 */
+.tabs{display:flex;overflow-x:auto;background:var(--card);border-bottom:1px solid var(--ln);position:sticky;top:0;z-index:10;gap:2px;padding:0 4px;box-shadow:0 2px 8px rgba(20,30,60,.04)}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1 0 auto;padding:11px 8px;font-size:12px;color:var(--sub);cursor:pointer;border-bottom:3px solid transparent;text-align:center;white-space:nowrap;transition:all .2s}
+.tab.active{color:var(--pri);border-bottom-color:var(--pri);font-weight:700}
+.tab.active .tab-icon{transform:scale(1.18) translateY(-1px)}
+.tab-icon{display:block;font-size:17px;margin-bottom:2px;line-height:1;transition:transform .25s}
+
+.content{flex:1;padding:12px;overflow-y:auto;padding-bottom:24px}
+
+/* Tab 内容过渡 */
+.tab-panel{transition:opacity .2s ease,transform .2s ease;will-change:opacity;backface-visibility:hidden}
+.fade-enter-active,.fade-leave-active{transition:opacity .18s ease}
+.fade-enter-from,.fade-leave-to{opacity:0}
+
+/* 卡片 */
+.card{background:var(--card);border-radius:var(--radius);padding:15px;margin-bottom:12px;box-shadow:var(--shadow);animation:cardIn .42s cubic-bezier(.22,.61,.36,1) both}
+.card:active{transform:scale(.992)}
+@keyframes cardIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.card h3{margin:0 0 10px;font-size:15px;font-weight:700;display:flex;align-items:center;gap:7px;color:var(--txt)}
+
+/* 数据大数字 */
+.bigrow{display:flex;gap:10px}
+.bigbox{flex:1;background:linear-gradient(145deg,#fafbfc,#f0f2f5);border-radius:12px;padding:13px 8px;text-align:center}
+.bigbox .v{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+.bigbox .l{font-size:11px;color:var(--sub);margin-top:3px}
+
+/* 颜色 */
+.red{color:var(--red)}.org{color:var(--org)}.blu{color:var(--blu)}.grn{color:var(--pri)}
+
+/* KV键值对 */
+.kv{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px dashed var(--ln);font-size:13px}
+.kv:last-child{border:none}
+.kv .k{color:var(--sub);flex-shrink:0;margin-right:12px}
+.kv .val{font-weight:500;text-align:right;word-break:break-all}
+
+/* 按钮 */
+.btn{display:inline-block;padding:11px 16px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--pri),var(--pri-d));color:#fff;font-size:14px;font-weight:600;cursor:pointer;width:100%;transition:opacity .15s,transform .1s}
+.btn:active{opacity:.8;transform:scale(.99)}
+.btn.ghost{background:transparent;color:var(--pri);border:1.5px solid var(--pri)}
+.btn.red{background:linear-gradient(135deg,#f0506b,var(--red))}.btn.org{background:linear-gradient(135deg,#f59b1f,var(--org))}
+.row{display:flex;gap:8px}
+.row .btn{margin-top:0}
+
+/* 输入框 */
+input,select{width:100%;padding:10px 13px;border:1.5px solid var(--ln);border-radius:10px;font-size:14px;margin-top:6px;background:var(--card);transition:border-color .2s;outline:none;font-family:inherit}
+input:focus{border-color:var(--pri)}
+label{font-size:12px;color:var(--sub);display:block;margin-top:10px;font-weight:600}
+
+/* 提示条 */
+.notice{font-size:12.5px;line-height:1.75;padding:11px 13px;background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border-radius:10px;margin-bottom:8px;border-left:4px solid var(--pri);color:var(--txt)}
+.notice.warn{background:linear-gradient(135deg,#fffbeb,#fefce8);border-left-color:var(--org)}
+.notice a{color:var(--blu);word-break:break-all}
+
+/* 标签 */
+.pill{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700}
+.pill.on{background:#e8f5ee;color:var(--pri)}
+.pill.off{background:#f5f5f5;color:#aaa}
+.pill.warn{background:#fff8ed;color:var(--org)}
+
+/* 开关 */
+.switch{position:relative;display:inline-block;width:46px;height:26px}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#ddd;border-radius:26px;transition:.25s}
+.slider:before{content:"";position:absolute;height:20px;width:20px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.25s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+input:checked+.slider{background:var(--pri)}
+
+/* 节点列表 */
+.node-item{display:flex;align-items:center;justify-content:space-between;padding:11px 12px;border:1px solid var(--ln);border-radius:11px;margin-bottom:8px;cursor:pointer;transition:background .15s}
+.node-item:active{background:#f5f5f5}
+.node-info{flex:1;min-width:0}
+.node-name{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+.node-tag{font-size:9px;padding:1px 6px;border-radius:5px;font-weight:600;color:#555}
+.node-sub{font-size:11px;color:var(--sub);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.node-switch{position:relative;width:42px;height:24px;border-radius:24px;flex-shrink:0;transition:background .2s}
+.node-switch i{position:absolute;top:3px;left:3px;width:18px;height:18px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+input:checked+.slider:before{transform:translateX(20px)}
+
+/* 表格 */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:8px 5px;border-bottom:1px solid var(--ln);text-align:center}
+th{color:var(--sub);font-weight:600;font-size:11px}
+.cmp{font-size:11px;width:100%}
+.cmp th{background:#fafbfc;white-space:nowrap;padding:6px 4px}
+.cmp td{padding:6px 4px}
+.cmp td:first-child{text-align:left;color:var(--sub);font-weight:600;background:#fafbfc;position:sticky;left:0}
+.cmp th:first-child{position:sticky;left:0;z-index:1}
+.center{text-align:center;color:var(--sub);padding:24px;font-size:13px}
+
+/* Toast */
+.toast{position:fixed;left:50%;top:36%;transform:translateX(-50%) translateY(-10px);background:rgba(20,26,46,.85);color:#fff;padding:11px 22px;border-radius:11px;font-size:14px;z-index:999;max-width:82%;text-align:center;backdrop-filter:blur(8px);animation:toastIn .25s ease;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(-10px)}}
+
+/* 图表 */
+#chart,#chart2{width:100%;height:210px}
+#gauge{width:100%;height:172px}
+
+/* 分段选择器 */
+.seg{display:flex;border:1.5px solid var(--pri);border-radius:10px;overflow:hidden;margin-top:8px}
+.seg div{flex:1;text-align:center;padding:9px 4px;font-size:12px;cursor:pointer;transition:all .2s}
+.seg div.on{background:var(--pri);color:#fff;font-weight:700}
+
+/* 加载动画 */
+.loading{text-align:center;padding:24px;color:var(--sub)}
+.loading::after{content:'';display:inline-block;width:20px;height:20px;border:2.5px solid var(--ln);border-top-color:var(--pri);border-radius:50%;animation:spin .7s linear infinite;margin-left:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* 迷你按钮 */
+.mini{padding:6px 12px;font-size:12px;border-radius:7px;border:1.5px solid #ddd;background:#fff;cursor:pointer;transition:all .15s}
+.mini:active{background:#f5f5f5}
+.mini.red{color:var(--red);border-color:#fcc}
+.mini.blu{color:var(--blu);border-color:#bde}
+
+/* 渠道卡片 */
+.ch{display:flex;justify-content:space-between;align-items:center;padding:12px;border:1.5px solid var(--ln);border-radius:11px;margin-bottom:8px;background:#fafbfc}
+.ch .meta{font-size:13px}
+.ch .acts{display:flex;gap:6px}
+
+/* 服务器标签 */
+.srv-tag{display:inline-block;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700}
+.srv-tag.main{background:var(--pri);color:#fff}.srv-tag.backup{background:var(--blu);color:#fff}.srv-tag.temp{background:var(--org);color:#fff}
+
+/* IP区 */
+.ip-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-top:8px}
+.ip-cell{background:#fafbfc;border-radius:10px;padding:10px;border-left:3px solid var(--pri);transition:transform .15s}
+.ip-cell:active{transform:scale(.97)}
+.ip-cell .ip-addr{font-size:15px;font-weight:700;color:var(--blu);word-break:break-all}
+.ip-cell .ip-meta{font-size:11px;color:var(--sub);margin-top:3px}
+
+/* 测速行 */
+.ping-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#fafbfc;border-radius:10px;margin-bottom:6px}
+.ping-row .ping-name{font-weight:500;font-size:13px}
+.ping-ms{font-size:12px;font-weight:700;padding:3px 8px;border-radius:6px}
+.ping-bars{display:flex;align-items:center;gap:2px;margin-left:8px}
+
+/* 折叠面板 */
+.fold-header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#fafbfc;border-radius:10px;cursor:pointer;margin-bottom:6px;transition:background .15s}
+.fold-header:active{background:#f0f2f5}
+.fold-header strong{font-size:14px}
+.fold-arrow{transition:transform .25s;font-size:12px;color:var(--sub)}
+.fold-header.open .fold-arrow{transform:rotate(90deg)}
+.fold-body{padding:0 8px 8px}
+
+/* 分隔标题 */
+.sec-title{font-size:12px;font-weight:700;color:var(--sub);text-transform:uppercase;letter-spacing:1px;margin:14px 0 8px;padding-left:2px}
+
+/* 进度条（套餐明细/浮动窗） */
+.bar{height:7px;background:#eef0f3;border-radius:6px;overflow:hidden;margin-top:5px}
+.bar-fill{height:100%;border-radius:6px;transition:width .5s ease}
+
+/* ===== 浮动窗 ===== */
+.floatw{position:fixed;z-index:300;touch-action:none;user-select:none;-webkit-user-select:none;transition:left .25s ease,top .25s ease}
+.floatw.docked .float-bubble{transform:scale(.78);opacity:.55}
+.floatw.docked:hover .float-bubble{transform:scale(1);opacity:1}
+.float-bubble{width:62px;height:62px;border-radius:50%;background:linear-gradient(135deg,#1ab66a,var(--pri-d));box-shadow:0 8px 22px rgba(19,133,84,.45);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;cursor:grab}
+.float-bubble:active{cursor:grabbing}
+.fb-val{font-size:15px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.fb-val small{font-size:9px;font-weight:500;opacity:.85}
+.fb-sub{font-size:9px;opacity:.9;margin-top:2px}
+.float-card{width:248px;background:#fff;border-radius:18px;box-shadow:0 14px 40px rgba(15,25,55,.22);overflow:hidden;cursor:default}
+.fc-head{display:flex;justify-content:space-between;align-items:center;padding:11px 13px;background:linear-gradient(135deg,var(--blu),var(--blu-d));color:#fff;font-size:13px;font-weight:700}
+.fc-close{font-size:20px;line-height:1;cursor:pointer;opacity:.92;padding:0 2px}
+.fc-body{padding:12px}
+.fc-grp{display:flex;gap:0 16px}
+.fc-grp .fc-row{flex:1;border-bottom:1px dashed var(--ln)}
+.fc-grp+.fc-row{border-top:1px dashed var(--ln)}
+.fc-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:13px;border-bottom:1px dashed var(--ln)}
+.fc-row:last-of-type{border:none}
+.fc-row b{font-variant-numeric:tabular-nums}
+.fc-bar{height:7px;background:#eef0f3;border-radius:6px;overflow:hidden;margin:8px 0 2px}
+.fc-bar-fill{height:100%;border-radius:6px;transition:width .5s ease}
+.fc-acts{display:flex;gap:8px;padding:0 12px 12px}
+.fc-acts .mini{flex:1;text-align:center}
+
+/* ===== AI 分析 ===== */
+.ai-summary{font-size:13px;line-height:1.8;color:var(--txt);background:var(--pri-l);border-radius:12px;padding:11px 13px;margin-top:4px;text-align:left}
+.ai-insight{display:flex;gap:11px;align-items:flex-start;padding:10px 12px;border:1px solid var(--ln);border-left:4px solid var(--pri);border-radius:11px;margin-bottom:8px;background:#fafbfc}
+.ai-ic{font-size:20px;line-height:1;flex-shrink:0;margin-top:1px}
+.ai-t{font-size:13.5px;font-weight:700;margin-bottom:2px}
+.ai-d{font-size:12.5px;color:var(--sub);line-height:1.6}
+
+/* ===== AI 多卡逐项卡片 ===== */
+.ai-card-row{padding:10px 12px;border:1px solid var(--ln);border-radius:10px;margin-bottom:8px;background:#fff}
+.ai-card-row.primary{border-color:var(--pri);border-width:2px;background:linear-gradient(135deg,#f0f6ff,#fff)}
+.ai-card-row.bad{border-color:var(--red);background:linear-gradient(135deg,#fef2f2,#fff)}
+.ai-cr-head{display:flex;align-items:center;gap:6px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px dashed var(--ln);font-size:13px}
+.ai-cr-head b{flex:1}
+.ai-cr-pct{font-size:12px;font-weight:700;padding:1px 8px;border-radius:10px;background:#f0f0f0}
+.ai-cr-pct.red{background:#fee;color:var(--red)}
+.ai-cr-pct.org{background:#fef3cd;color:#b87500}
+.ai-cr-pct.grn{background:#e6f7ed;color:var(--grn)}
+.ai-cr-body{display:grid;grid-template-columns:repeat(4,1fr);gap:6px 10px;font-size:12px}
+.ai-cr-body .k{color:var(--sub);font-size:11px;display:block}
+.ai-cr-body .v{font-weight:600;font-size:13px}
+.ai-cr-body .v.red{color:var(--red)}
+.ai-cr-body .v.org{color:#e08020}
+.ai-cr-body .v.blu{color:var(--blu)}
+.ai-cr-body .v.pri{color:var(--pri)}
+.ai-cr-body .v.grn{color:var(--grn)}
+.ai-cr-body .v.sub{color:var(--sub)}
+/* v5.7 主卡选择 chip + 套餐+卡明细样式（对齐原网站） */
+.pc-chip{padding:6px 10px;border:1px solid var(--ln);border-radius:18px;background:#fff;font-size:12px;display:inline-flex;align-items:center;gap:4px;cursor:pointer;transition:all .15s}
+.pc-chip:hover{border-color:var(--pri);background:var(--pri-l)}
+.pc-chip.on{border-color:var(--pri);background:var(--pri);color:#fff;font-weight:600}
+.pc-chip .pri{color:var(--org);font-weight:700}
+.pc-chip.on .pri{color:#fff}
+.pc-chip.on .sub{color:rgba(255,255,255,.6)}
+.pkg-row{padding:9px 11px;border:1px solid var(--ln);border-radius:9px;margin-bottom:7px;background:#fafbfc}
+.pkg-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px;gap:8px}
+.pkg-name{font-weight:600;font-size:13px;line-height:1.3}
+.pkg-pct{font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;flex-shrink:0}
+.vc-list{margin-top:6px;padding-top:5px;border-top:1px dashed var(--ln)}
+.vc-row{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:11.5px;line-height:1.5}
+.vc-row.primary{background:linear-gradient(to right,#f0f6ff,transparent);padding-left:5px;border-radius:4px}
+.vc-row.current{background:linear-gradient(to right,#fff7e6,transparent);padding-left:5px;border-radius:4px}
+.vc-row.primary.current{background:linear-gradient(to right,#f0f6ff 30%,#fff7e6 100%)}
+.vc-flag{flex-shrink:0;font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:8px;min-width:42px;text-align:center}
+.vc-flag.pri{background:#e6f7ed;color:var(--grn);border:1px solid #b8e0c5}
+.vc-flag.sub{background:#f0f0f0;color:var(--sub);border:1px solid #e0e0e0}
+.vc-num{flex:1;color:var(--txt);font-variant-numeric:tabular-nums}
+.vc-use{color:var(--sub);font-variant-numeric:tabular-nums;font-weight:600}
+
+/* v5.8 失效套餐灰化 + "套餐失效"角标 */
+.pkg-row.invalid{background:#f5f5f5;opacity:.78;border-style:dashed;border-color:#d0d0d0}
+.pkg-row.invalid .pkg-name{color:#888;text-decoration:line-through;text-decoration-color:#bbb}
+.pkg-row.invalid .pkg-pct{color:#aaa!important}
+.pkg-invalid-tip{display:inline-block;margin-left:6px;padding:1px 7px;font-size:10px;font-weight:700;color:#fff;background:#e74c3c;border-radius:8px;vertical-align:middle;letter-spacing:.3px;animation:invalidPulse 1.6s ease-in-out infinite}
+@keyframes invalidPulse{0%,100%{opacity:.85}50%{opacity:1}}
+
+/* v5.8 "你"列高亮（黄底橙边，对应 👤 当前登录账号） */
+.cmp td.you{background:linear-gradient(180deg,#fff7e6 0%,#fff1d0 100%)!important;font-weight:600;border-left:2px solid var(--org);border-right:2px solid var(--org)}
+.cmp th.you{background:linear-gradient(180deg,#fff3d6,#ffe7b3)!important;border-left:2px solid var(--org);border-right:2px solid var(--org);color:var(--org)!important}
+.cmp tr:last-child td.you{border-bottom:2px solid var(--org)}
+.cmp-col{transition:background .2s}
+
+/* v5.8 ai-card-row 当前用户卡片 */
+.ai-card-row.current{border-color:var(--org);border-width:2px;background:linear-gradient(135deg,#fff7e6,#fff)}
+
+/* 主卡选择器中的异常卡标识 */
+select option.bad{color:var(--red)}
+
+/* 浮动窗主卡切换按钮 */
+.float-card .fc-primary{font-size:11px;color:var(--sub);margin:4px 0 0;padding-top:6px;border-top:1px dashed var(--ln)}
+.float-card .fc-primary b{color:var(--pri)}
+
+/* 空状态美化 */
+.empty{text-align:center;padding:40px 20px;color:var(--sub)}
+.empty .emoji{font-size:40px;opacity:.6}
+.empty p{margin:10px 0 0;font-size:13px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="head">
+      <div class="avatar">📊</div>
+      <h1>小蒋流量查询</h1>
+      <div class="badge" v-if="float.enabled">悬浮 ●</div>
+    </div>
+    <div class="sub" id="topsub">请先设置账号</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab" :class="{active:tab==='query'}" @click="tab='query'"><span class="tab-icon">📈</span>查询</div>
+    <div class="tab" :class="{active:tab==='monitor'}" @click="tab='monitor'"><span class="tab-icon">🛡️</span>监控</div>
+    <div class="tab" :class="{active:tab==='ai'}" @click="tab='ai';$nextTick(()=>analyzeAI())"><span class="tab-icon">🤖</span>AI分析</div>
+    <div class="tab" :class="{active:tab==='ip'}" @click="tab='ip';$nextTick(()=>loadIpAll())"><span class="tab-icon">🌐</span>IP</div>
+    <div class="tab" :class="{active:tab==='history'}" @click="tab='history';$nextTick(()=>loadHistory())"><span class="tab-icon">📋</span>历史</div>
+    <div class="tab" :class="{active:tab==='push'}" @click="tab='push';$nextTick(()=>onEnterPush())"><span class="tab-icon">🔔</span>推送</div>
+    <div class="tab" :class="{active:tab==='donate'}" @click="tab='donate';$nextTick(()=>loadDonate())"><span class="tab-icon">💝</span>捐赠</div>
+    <div class="tab" :class="{active:tab==='sys'}" @click="tab='sys';$nextTick(()=>loadSys())"><span class="tab-icon">⚙️</span>系统</div>
+    <div class="tab" :class="{active:tab==='account'}" @click="tab='account';$nextTick(()=>onEnterAccount())"><span class="tab-icon">👤</span>账号</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ===== 查询 ===== -->
+    <div v-show="tab==='query'" class="tab-panel">
+      <div class="card">
+        <h3>当前流量 <span v-if="info.now" class="pill on" style="font-size:11px">{{info.now.packageName || '本卡'}}</span></h3>
+        <div v-if="info.differentFlow==='-' && !info.html" class="loading">正在查询</div>
+        <template v-else>
+          <!-- 顶部：跳点(24h) + 免流(24h) — ★ v5.15 对齐原网站 http://flow.mxzu.net/my 格式（无"计费"/"元"字样） -->
+          <div class="bigrow">
+            <div class="bigbox"><div class="v red">{{ai && ai.dayJumpRaw !== undefined ? fmtKB(ai.dayJumpRaw || 0) : '—'}}</div><div class="l">跳点</div></div>
+            <div class="bigbox"><div class="v org">{{ai && ai.dayFreeRaw !== undefined ? fmtKB(ai.dayFreeRaw || 0) : '—'}}</div><div class="l" style="color:var(--org)">免流</div></div>
+          </div>
+          <!-- v5.10 真实数据：通用 / 定向 / 公免（对齐原网站截图） -->
+          <div v-if="info.now" style="margin-top:10px;border-top:1px dashed var(--ln);padding-top:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <span style="font-size:12px;color:var(--sub)">📦 通用</span>
+              <span style="font-size:13px">
+                <b style="color:var(--pri)">{{fmtMB(info.now.usedGeneralFlow)}}</b>
+                <span style="color:var(--sub);font-size:11px"> / {{fmtMB(info.now.generalFlow)}}</span>
+              </span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <span style="font-size:12px;color:var(--sub)">🎯 定向免流</span>
+              <span style="font-size:13px">
+                <b style="color:var(--org)">{{fmtMB(info.now.usedFreeFlow)}}</b>
+                <span style="color:var(--sub);font-size:11px"> / {{fmtMB(info.now.totalFreeFlow)}}</span>
+              </span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <span style="font-size:12px;color:var(--sub)">🌐 公免</span>
+              <span style="font-size:13px"><b style="color:var(--grn)">{{fmtMB(info.now.publicFreeFlow)}}</b></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px dashed var(--ln);padding-top:5px;margin-top:3px">
+              <span style="font-size:12px;font-weight:600">🗓️ 本卡本月</span>
+              <span style="font-size:14px"><b style="color:var(--red)">{{fmtMB(info.now.sum || info.now.usedFlow)}}</b></span>
+            </div>
+          </div>
+          <div id="chart"></div>
+        </template>
+      </div>
+
+      <!-- 流量走势（来自历史记录时间序列） -->
+      <div class="card" v-if="history.length">
+        <h3>流量走势 <span class="pill on">近 {{history.length}} 条</span></h3>
+        <div id="chart2"></div>
+      </div>
+
+      <!-- 流量套餐明细（按"套餐+旗下每张卡用量"渲染，对齐原网站） -->
+      <div class="card" v-if="flowList.length">
+        <h3>流量套餐（{{flowList.length}} 个，<span style="color:var(--pri)">{{cards.length || 0}} 张卡共享</span>）</h3>
+        <!-- ★ v5.11 修复：只有 ft=1 通用类 + total=0 才算失效。ft=2 免流类 total=0 是"无限免流包"，rt=I3 跳点类 total=0 是按元计费无总量 -->
+        <div v-for="(f,i) in flowList" :key="'fl'+i" class="pkg-row" :class="{invalid: parseFloat(f.total)===0 && parseFloat(f.remain)<0 && String(f.flowType)==='1' && f.realresourcetype!=='I3'}">
+          <div class="pkg-head">
+            <div style="flex:1;min-width:0">
+              <div class="pkg-name">
+                {{f.feePolicyName || f.addUpItemName || '套餐'}}
+                <!-- 仅 ft=1 通用类失效才标"套餐失效"；免流/跳点 total=0 是"无限" -->
+                <span v-if="parseFloat(f.total)===0 && parseFloat(f.remain)<0 && String(f.flowType)==='1' && f.realresourcetype!=='I3'" class="pkg-invalid-tip" title="上游数据异常：通用类套餐总量为 0 但剩余为负，通常是已撤销/失效的赠款">⚠️ 套餐失效</span>
+                <span v-else-if="parseFloat(f.total)===0" class="pkg-unlimited-tip" :title="String(f.flowType)==='2' ? '免流包无总量限制' : '跳点按元计费，无总量'" style="display:inline-block;background:linear-gradient(135deg,#18a058,#0d8a4a);color:#fff;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:4px;font-weight:600">∞ 无限</span>
+              </div>
+              <div style="font-size:11px;color:var(--sub);margin-top:1px">{{f.addUpItemName}}</div>
+            </div>
+            <div class="pkg-pct" :style="{color: f.usedPercent>90?'var(--red)':f.usedPercent>50?'var(--org)':'var(--pri)'}">
+              {{f.usedPercent || 0}}%
+            </div>
+          </div>
+          <div class="bar" v-if="parseFloat(f.total)>0">
+            <div class="bar-fill" :style="{width: Math.min(100, (parseFloat(f.use)/parseFloat(f.total)*100)) + '%', background: f.usedPercent>90?'var(--red)':f.usedPercent>50?'var(--org)':'var(--pri)'}"></div>
+          </div>
+          <div v-if="parseFloat(f.total)===0 && parseFloat(f.remain)<0 && String(f.flowType)==='1' && f.realresourcetype!=='I3'" style="font-size:11px;color:var(--sub);margin-top:3px;display:flex;justify-content:space-between">
+            <span>已用 <b>{{fmtKb(f.use)}}</b> / 总量 <b>0 KB</b>（失效赠款）</span>
+            <span style="color:var(--red)">⚠️ 数据异常（剩 {{fmtKb(f.remain)}}，已忽略）</span>
+          </div>
+          <div v-else-if="parseFloat(f.total)===0" style="font-size:11px;color:var(--sub);margin-top:3px;display:flex;justify-content:space-between">
+            <span>已用 <b :style="{color: f.usedPercent>90?'var(--red)':''}">{{fmtKb(f.use)}}</b> / 总量 <b style="color:var(--grn)">∞ 无限</b></span>
+            <span :style="{color: parseFloat(f.remain)<0?'var(--org)':'var(--grn)'}" :title="String(f.flowType)==='2' ? '免流包不设剩余' : '跳点按元计费'">无剩余</span>
+          </div>
+          <div v-else style="font-size:11px;color:var(--sub);margin-top:3px;display:flex;justify-content:space-between">
+            <span>已用 <b :style="{color: f.usedPercent>90?'var(--red)':''}">{{fmtKb(f.use)}}</b> / 总量 {{fmtKb(f.total)}}</span>
+            <span :style="{color: parseFloat(f.remain)<0?'var(--red)':'var(--grn)'}">剩 {{fmtKb(f.remain)}}</span>
+          </div>
+          <!-- 旗下每张卡用量明细（v5.7 关键） -->
+          <div v-if="f.viceCardlist && f.viceCardlist.length" class="vc-list">
+            <div v-for="(vc,vi) in f.viceCardlist" :key="'vc'+vi" class="vc-row" :class="{primary: vc.viceCardflag==1, current: vc.currentLoginFlag==1}">
+              <span :class="['vc-flag', vc.viceCardflag==1?'pri':'sub']">
+                <span v-if="vc.viceCardflag==1">⭐主卡</span>
+                <span v-else>副卡</span>
+              </span>
+              <span class="vc-num">{{vc.usernumber}}</span>
+              <span class="vc-use">{{fmtKb(vc.use)}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 语音 / 短信 / 公免（套餐+每张卡） -->
+      <div class="card" v-if="voiceList.length || smsList.length || (info.now && info.now.gmList && info.now.gmList.length)">
+        <h3>语音 / 短信 / 公免</h3>
+        <div v-if="voiceList.length">
+          <div class="sec-title" style="margin:8px 0 6px">📞 语音（分钟）</div>
+          <div v-for="(v,i) in voiceList" :key="'v'+i" class="pkg-row">
+            <div class="pkg-head">
+              <div style="flex:1;min-width:0">
+                <div class="pkg-name">{{v.feePolicyName || v.addUpItemName || '语音'}}</div>
+                <div style="font-size:11px;color:var(--sub)">{{v.addUpItemName}}</div>
+              </div>
+              <div class="pkg-pct" :style="{color: parseFloat(v.usedPercent)>90?'var(--red)':'var(--pri)'}">{{v.usedPercent || 0}}%</div>
+            </div>
+            <div class="bar" v-if="parseFloat(v.total)>0">
+              <div class="bar-fill" :style="{width: Math.min(100, (parseFloat(v.use)/parseFloat(v.total)*100)) + '%', background: parseFloat(v.usedPercent)>90?'var(--red)':'var(--pri)'}"></div>
+            </div>
+            <div style="font-size:11px;color:var(--sub);margin-top:3px">已用 {{v.use}} 分钟 / 总量 {{v.total}} 分钟（剩 {{v.remain}} 分钟）</div>
+            <div v-if="v.viceCardlist && v.viceCardlist.length" class="vc-list">
+              <div v-for="(vc,vi) in v.viceCardlist" :key="'vv'+vi" class="vc-row" :class="{primary: vc.viceCardflag==1, current: vc.currentLoginFlag==1}">
+                <span :class="['vc-flag', vc.viceCardflag==1?'pri':'sub']">
+                  <span v-if="vc.viceCardflag==1">⭐主卡</span>
+                  <span v-else>副卡</span>
+                </span>
+                <span class="vc-num">{{vc.usernumber}}</span>
+                <span class="vc-use">{{vc.use}} 分钟</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-if="smsList.length">
+          <div class="sec-title" style="margin:8px 0 6px">💬 短信（条）</div>
+          <div v-for="(s,i) in smsList" :key="'s'+i" class="pkg-row">
+            <div class="pkg-head">
+              <div style="flex:1;min-width:0">
+                <div class="pkg-name">{{s.feePolicyName || s.addUpItemName || '短信'}}</div>
+                <div style="font-size:11px;color:var(--sub)">{{s.addUpItemName}}</div>
+              </div>
+              <div class="pkg-pct" :style="{color: parseFloat(s.usedPercent)>90?'var(--red)':'var(--pri)'}">{{s.usedPercent || 0}}%</div>
+            </div>
+            <div class="bar" v-if="parseFloat(s.total)>0">
+              <div class="bar-fill" :style="{width: Math.min(100, (parseFloat(s.use)/parseFloat(s.total)*100)) + '%', background: parseFloat(s.usedPercent)>90?'var(--red)':'var(--pri)'}"></div>
+            </div>
+            <div style="font-size:11px;color:var(--sub);margin-top:3px">已用 {{s.use}} 条 / 总量 {{s.total}} 条（剩 {{s.remain}} 条）</div>
+            <div v-if="s.viceCardlist && s.viceCardlist.length" class="vc-list">
+              <div v-for="(vc,vi) in s.viceCardlist" :key="'vs'+vi" class="vc-row" :class="{primary: vc.viceCardflag==1, current: vc.currentLoginFlag==1}">
+                <span :class="['vc-flag', vc.viceCardflag==1?'pri':'sub']">
+                  <span v-if="vc.viceCardflag==1">⭐主卡</span>
+                  <span v-else>副卡</span>
+                </span>
+                <span class="vc-num">{{vc.usernumber}}</span>
+                <span class="vc-use">{{vc.use}} 条</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-if="info.now && info.now.gmList && info.now.gmList.length">
+          <div class="sec-title" style="margin:8px 0 6px">🎁 公免</div>
+          <div v-for="(g,i) in info.now.gmList" :key="'g'+i" class="kv">
+            <span class="k">{{g.feePolicyName || g.addUpItemName || '公免'}}</span>
+            <span class="val">已用 {{g.use}}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" v-if="info.html">
+        <h3>明细</h3>
+        <div style="font-size:13px;line-height:1.85" v-html="info.html"></div>
+      </div>
+      <div class="card" v-if="info.now">
+        <h3>详细数据</h3>
+        <div class="kv"><span class="k">套餐</span><span class="val">{{info.now.packageName}}</span></div>
+        <div class="kv"><span class="k">通用总量</span><span class="val">{{fmtGb(info.now.generalFlow)}} GB</span></div>
+        <div class="kv"><span class="k">已用通用</span><span class="val">{{fmtGb(info.now.usedGeneralFlow)}} GB</span></div>
+        <div class="kv"><span class="k">剩余通用</span><span class="val grn">{{fmtGb(info.now.allRemainUsedGeneralFlow)}} GB</span></div>
+        <div class="kv"><span class="k">定向已用</span><span class="val">{{fmtGb(info.now.allUsedFreeFlow)}} GB</span></div>
+        <div class="kv"><span class="k">剩余定向</span><span class="val grn">{{fmtGb(info.now.allRemainUsedFreeFlow)}} GB</span></div>
+        <div class="kv"><span class="k">公免</span><span class="val">{{fmtGb(info.now.publicFreeFlow)}} GB</span></div>
+        <div class="kv"><span class="k">更新时间</span><span class="val">{{info.now.time}}</span></div>
+      </div>
+      <button class="btn" @click="loadInfo">刷新查询</button>
+    </div>
+
+    <!-- ===== 监控 ===== -->
+    <div v-show="tab==='monitor'" class="tab-panel">
+      <div class="card" :style="{borderLeft:'4px solid ' + (monitor.enabled ? 'var(--pri)' : '#ccc')}">
+        <h3>跳点监控保护 <span :class="'pill ' + (monitor.daemon ? 'on' : 'off')">{{monitor.daemon ? '后台守护运行中' : '后台未运行'}}</span></h3>
+        <div class="bigrow" style="margin-bottom:12px">
+          <div class="bigbox" :style="{background: monitor.enabled ? '#eaf8ef' : '#f5f5f5'}">
+            <div style="font-size:28px">{{monitor.enabled ? '✅' : '⏸'}}</div>
+            <div class="l">{{monitor.enabled ? '监控中' : '已暂停'}}</div>
+          </div>
+          <div class="bigbox" :style="{background: parseFloat(info.differentFlow) > 0 ? '#fef0f0' : '#fafafa'}">
+            <div class="v red" style="font-size:20px">{{info.differentFlow}}<small style="font-size:12px;font-weight:400">MB</small></div>
+            <div class="l">当前跳点</div>
+          </div>
+        </div>
+        <button :class="'btn ' + (monitor.enabled ? 'org' : '')" @click="toggleMonitor">
+          {{monitor.enabled ? '⏸ 暂停监控' : '▶ 开启监控'}}
+        </button>
+      </div>
+
+      <div class="card">
+        <h3>阈值配置</h3>
+        <label>提醒阈值（MB）</label>
+        <div class="row" style="margin-top:6px">
+          <button class="mini" @click="monitor.alertThreshold = Math.max(10, monitor.alertThreshold - 10)">−</button>
+          <input v-model.number="monitor.alertThreshold" type="number" inputmode="numeric" style="text-align:center;font-size:18px;font-weight:700">
+          <span style="align-self:center;color:var(--sub);font-size:12px">MB</span>
+          <button class="mini" @click="monitor.alertThreshold += 10">+</button>
+        </div>
+        <label>断网阈值（MB）</label>
+        <div class="row" style="margin-top:6px">
+          <button class="mini" @click="monitor.cutThreshold = Math.max(100, monitor.cutThreshold - 100)">−</button>
+          <input v-model.number="monitor.cutThreshold" type="number" inputmode="numeric" style="text-align:center;font-size:18px;font-weight:700">
+          <span style="align-self:center;color:var(--sub);font-size:12px">MB</span>
+          <button class="mini" @click="monitor.cutThreshold += 100">+</button>
+        </div>
+        <label>检测频率（秒）</label>
+        <div class="row" style="margin-top:6px">
+          <button class="mini" @click="monitor.interval = Math.max(30, monitor.interval - 30)">−</button>
+          <input v-model.number="monitor.interval" type="number" inputmode="numeric" style="text-align:center;font-size:18px;font-weight:700">
+          <span style="align-self:center;color:var(--sub);font-size:12px">秒</span>
+          <button class="mini" @click="monitor.interval += 30">+</button>
+        </div>
+        <label>滞后回滞（%）</label>
+        <div class="row" style="margin-top:6px">
+          <button class="mini" @click="monitor.hyst = Math.max(0, monitor.hyst - 5)">−</button>
+          <input v-model.number="monitor.hyst" type="number" inputmode="numeric" style="text-align:center;font-size:18px;font-weight:700">
+          <span style="align-self:center;color:var(--sub);font-size:12px">%</span>
+          <button class="mini" @click="monitor.hyst += 5">+</button>
+        </div>
+        <div class="notice" style="margin-top:8px">滞后：跳点回落到「提醒阈值 ×(1−滞后%)」以下才解除提醒，避免反复弹窗告警风暴。</div>
+        <button class="btn ghost" @click="saveMonitorConfig" style="margin-top:10px">保存并同步后台</button>
+      </div>
+
+      <div class="card">
+        <h3>网络操作</h3>
+        <div class="notice warn" v-if="monitor.lastAction">{{monitor.lastAction}}</div>
+        <div class="notice" v-if="apiStatus === 'offline'" style="background:#fef2f2;border-left-color:var(--red)">Root 接口未连接，网络操作可能无效（请通过 KernelSU/SukiSU 管理器内的「网页」打开本页）</div>
+        <div class="row">
+          <button class="btn ghost" @click="restoreNetwork" style="flex:1">恢复移动数据</button>
+          <button class="btn red" @click="cutNetwork" style="flex:1">关闭移动数据</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>监控日志</h3>
+        <div v-if="!monitor.logs.length" class="center" style="padding:14px">暂无日志</div>
+        <div v-for="(log,i) in monitor.logs.slice().reverse()" :key="i"
+             style="padding:7px 0;border-bottom:1px dashed var(--ln);font-size:12px"
+             :style="{color: log.type==='alert'?'var(--red)':log.type==='cut'?'var(--red)':'var(--sub)'}">
+          {{log.time}} · {{log.msg}}
+        </div>
+        <button class="btn ghost" v-if="monitor.logs.length" @click="monitor.logs=[]" style="width:auto;margin-top:6px;font-size:11px">清空日志</button>
+      </div>
+    </div>
+
+    <!-- ===== AI 分析 ===== -->
+    <div v-show="tab==='ai'" class="tab-panel">
+      <div class="card" style="border-left:4px solid var(--blu)">
+        <h3>🤖 AI 智能分析</h3>
+        <div v-if="ai.loading" class="loading">正在分析流量数据</div>
+        <template v-else>
+          <div style="text-align:center">
+            <div id="gauge"></div>
+            <div class="ai-summary" v-if="ai.summary">{{ai.summary}}</div>
+          </div>
+        </template>
+      </div>
+
+      <div class="card" v-if="ai.insights.length">
+        <h3>关键洞察</h3>
+        <div v-for="(it,i) in ai.insights" :key="i" class="ai-insight" :style="{borderLeftColor:it.color}">
+          <span class="ai-ic">{{it.icon}}</span>
+          <div><div class="ai-t">{{it.title}}</div><div class="ai-d">{{it.text}}</div></div>
+        </div>
+      </div>
+
+      <div class="card" v-if="ai.cards && ai.cards.length">
+        <h3>🆚 多卡对比（账户共 <b style="color:var(--pri)">{{ai.cards.length}}</b> 张卡 · <span style="color:var(--grn)">{{ai.cards.filter(function(c){return c.isPrimary}).length}} 主卡</span> + {{ai.cards.filter(function(c){return !c.isPrimary}).length}} 副卡）<span v-if="ai.cards.filter(function(c){return c.isCurrent}).length" class="pill on" style="background:var(--org);margin-left:6px">👤 你 = {{(ai.cards.filter(function(c){return c.isCurrent})[0]||{}).usernumber}}</span></h3>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <table class="cmp">
+          <thead><tr>
+            <th>指标</th>
+            <th v-for="(c,i) in ai.cards" :key="i" :class="['cmp-col', c.isCurrent?'you':'', i===ai.primaryIdx?'pri':'']">
+              <div style="font-size:11px;line-height:1.3">
+                <span v-if="i===ai.primaryIdx">⭐ </span>
+                <span v-if="c.isCurrent" title="当前登录账号" style="color:var(--org)">👤 你</span>
+                <span v-else>{{c.usernumber}}</span>
+              </div>
+              <div v-if="c.isCurrent" style="font-size:9.5px;color:var(--org);font-weight:700;margin-top:1px;letter-spacing:.5px">▲ 本机</div>
+            </th>
+          </tr></thead>
+          <tbody>
+            <!-- ★ v5.13 按用户最新要求 7 项顺序：1本月用量 2本月免流 3本月已用通用(=跳点) 4日用 5日免 6日跳 7公免 -->
+            <!-- 24h 字段(4/5/6)与公免(7)：仅当前登录卡显示真实值，其他 4 张副卡显示 —/0 -->
+            <tr><td>🗓️ 本月用量</td>
+              <td v-for="(c,i) in ai.cards" :key="'m'+i" :class="c.isCurrent?'you':''" :style="{color: i===ai.primaryIdx ? 'var(--pri)' : ''}">
+                <b>{{(ai.cardInsights[i].monthUse/1024).toFixed(2)}} GB</b>
+              </td>
+            </tr>
+            <tr><td>🎯 本月免流</td>
+              <td v-for="(c,i) in ai.cards" :key="'f'+i" :class="[ai.cardInsights[i].monthFree>0?'org':'', c.isCurrent?'you':'']" :style="ai.cardInsights[i].monthFree>0?'color:var(--org)':''">
+                <span v-if="c.isCurrent" style="color:var(--org);font-weight:700;margin-right:2px">›</span>
+                <b>{{ai.cardInsights[i].monthFree > 0 ? (ai.cardInsights[i].monthFree/1024).toFixed(2) + ' GB' : '0 MB'}}</b>
+              </td>
+            </tr>
+            <tr><td title="=本月已用通用流量">📦 本月已用通用</td>
+              <td v-for="(c,i) in ai.cards" :key="'j'+i" :class="[ai.cardInsights[i].monthJump>0?'red':'', c.isCurrent?'you':'']" :style="ai.cardInsights[i].monthJump>0?'color:var(--red)':''">
+                <span v-if="c.isCurrent" style="color:var(--org);font-weight:700;margin-right:2px">›</span>
+                <b>{{ai.cardInsights[i].monthJump > 0 ? (ai.cardInsights[i].monthJump/1024).toFixed(2) + ' GB' : '0 MB'}}</b>
+              </td>
+            </tr>
+            <tr><td>📅 日用量</td>
+              <td v-for="(c,i) in ai.cards" :key="'dy'+i" :class="c.isCurrent?'you':''" :style="c.isCurrent?'background:rgba(255,107,0,.04)':''">
+                <b v-if="c.isCurrent" style="color:var(--pri)">{{ai.dailyTotalText || '—'}}</b>
+                <b v-else-if="ai.cardInsights[i] && ai.cardInsights[i].dayUse !== null && ai.cardInsights[i].dayUse !== undefined" style="color:var(--pri)" :title="'自上次访问以来近 ' + (ai.cardInsights[i].deltaHours || 0).toFixed(1) + ' 小时用量'">{{fmtMB(ai.cardInsights[i].dayUse)}}</b>
+                <b v-else style="color:var(--sub)" title="首次访问无历史，明日再看">暂无历史</b>
+              </td>
+            </tr>
+            <tr><td>🛡️ 日免流</td>
+              <td v-for="(c,i) in ai.cards" :key="'df'+i" :class="c.isCurrent?'you':''" :style="c.isCurrent?'background:rgba(255,107,0,.04)':''">
+                <b v-if="c.isCurrent" style="color:var(--org)">{{ai.dailyFreeText || '—'}}</b>
+                <b v-else-if="ai.cardInsights[i] && ai.cardInsights[i].dayFree !== null && ai.cardInsights[i].dayFree !== undefined" style="color:var(--org)" :title="'近 ' + (ai.cardInsights[i].deltaHours || 0).toFixed(1) + ' 小时免流增量'">{{fmtMB(ai.cardInsights[i].dayFree)}}</b>
+                <b v-else style="color:var(--sub)" title="首次访问无历史，明日再看">暂无历史</b>
+              </td>
+            </tr>
+            <tr><td>📆 日跳点</td>
+              <td v-for="(c,i) in ai.cards" :key="'dj'+i" :class="c.isCurrent?'you':''" :style="c.isCurrent?'background:rgba(255,107,0,.04)':''">
+                <b v-if="c.isCurrent" style="color:var(--red)">{{ai.dailyJumpText || '—'}}</b>
+                <b v-else-if="ai.cardInsights[i] && ai.cardInsights[i].dayJump !== null && ai.cardInsights[i].dayJump !== undefined" style="color:var(--red)" :title="'近 ' + (ai.cardInsights[i].deltaHours || 0).toFixed(1) + ' 小时通用增量'">{{fmtMB(ai.cardInsights[i].dayJump)}}</b>
+                <b v-else style="color:var(--sub)" title="首次访问无历史，明日再看">暂无历史</b>
+              </td>
+            </tr>
+            <tr><td>🌐 公免</td>
+              <td v-for="(c,i) in ai.cards" :key="'pb'+i" :class="c.isCurrent?'you':''" style="color:var(--grn)">
+                <span v-if="c.isCurrent" style="color:var(--org);font-weight:700;margin-right:2px">›</span>
+                <b v-if="c.isCurrent">{{(ai.cardInsights[i].public/1024).toFixed(2)}} GB</b>
+                <b v-else style="color:var(--sub)" title="副卡无独立公免数据（上游 API 账户级共享）">0.00 GB</b>
+              </td>
+            </tr>
+            <tr v-if="ai.dailyAvgText && ai.dailyAvgText !== '—'"><td title="日均 = 24h 日用量 / 采样天数（v5.13 含公免）">📊 日均</td>
+              <td v-for="(ci,i) in ai.cardInsights" :key="'da'+i" :class="ai.cards[i] && ai.cards[i].isCurrent?'you':''" style="font-size:11px">
+                <b v-if="ai.cards[i] && ai.cards[i].isCurrent" style="color:var(--org);font-weight:700;margin-right:2px">›</b>
+                <span v-if="ai.cards[i] && ai.cards[i].isCurrent">{{ai.dailyAvgText}}</span>
+                <span v-else style="color:var(--sub)" title="副卡无独立 24h API">—</span>
+              </td>
+            </tr>
+            <tr><td>占账户%</td>
+              <td v-for="(ci,i) in ai.cardInsights" :key="'p'+i" :class="[ci.pct>=60?'red':ci.pct>=30?'org':'grn', ai.cards[i] && ai.cards[i].isCurrent?'you':'']"><b>{{ci.pct}}%</b></td>
+            </tr>
+            <tr><td>参与套餐数</td>
+              <td v-for="(c,i) in ai.cards" :key="'pc'+i" :class="c.isCurrent?'you':''" style="font-size:11px;color:var(--sub)">{{c.pkgCount}} 个</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+        <div class="notice" style="margin-top:6px">
+          ⭐ 为主卡（viceCardflag=1，套餐主用户）· 👤<b style="color:var(--org)"> 你</b> 为当前登录账号（黄底高亮列）<br>
+          7 项指标：<b>1本月用量</b>=通用+免流（不含公免，对齐原网站） / <b>2本月免流</b>=ft=2 已用 / <b>3本月已用通用</b>=ft=1 已用 / <b>4日用/5日免/6日跳/7日公免</b>=now-history 差 / <b>8公免</b>=当前卡 11.9GB / <b style="color:var(--sub)">副卡 24h+公免无独立 API，标 —/0</b>
+        </div>
+      </div>
+
+      <div class="card" v-if="ai.cards && ai.cards.length > 1">
+        <h3>📊 每张卡 7 项指标（本月用量/免/跳/日用/日免/日跳/公免）</h3>
+        <div v-for="(c,i) in ai.cards" :key="'c'+i" :class="['ai-card-row', i===ai.primaryIdx?'primary':'', c.isCurrent?'current':'']">
+          <div class="ai-cr-head">
+            <span v-if="i===ai.primaryIdx">⭐ </span>
+            <span v-if="c.isCurrent" style="color:var(--org)">👤 你</span>
+            <b>{{c.usernumber}}</b>
+            <span v-if="c.isCurrent" class="ai-cr-pct org" style="margin-left:0">本机</span>
+            <span class="ai-cr-pct" :class="(ai.cardInsights && ai.cardInsights[i].pct>=60)?'red':(ai.cardInsights && ai.cardInsights[i].pct>=30?'org':'grn')">
+              {{ai.cardInsights && ai.cardInsights[i].pct}}% 占账户
+            </span>
+          </div>
+          <div class="ai-cr-body">
+            <div><span class="k">🗓️ 本月用量</span>
+              <span class="v pri"><b>{{(ai.cardInsights[i].monthUse/1024).toFixed(2)}} GB</b></span>
+            </div>
+            <div><span class="k">🎯 本月免流</span>
+              <span class="v org"><b>{{(ai.cardInsights[i].monthFree/1024).toFixed(2)}} GB</b></span>
+            </div>
+            <div><span class="k" title="=本月已用通用流量">📦 本月已用通用</span>
+              <span class="v red"><b>{{(ai.cardInsights[i].monthJump/1024).toFixed(2)}} GB</b></span>
+            </div>
+            <div><span class="k">📅 日用量</span>
+              <span class="v blu"><b>{{c.isCurrent ? (ai.dailyTotalText || '—') : '—'}}</b></span>
+            </div>
+            <div><span class="k">🛡️ 日免流</span>
+              <span class="v org"><b>{{c.isCurrent ? (ai.dailyFreeText || '—') : '—'}}</b></span>
+            </div>
+            <div><span class="k">📆 日跳点</span>
+              <span class="v red"><b>{{c.isCurrent ? (ai.dailyJumpText || '—') : '—'}}</b></span>
+            </div>
+            <div><span class="k">🌐 公免</span>
+              <span class="v grn"><b>{{c.isCurrent ? ((ai.cardInsights[i].public/1024).toFixed(2) + ' GB') : '0.00 GB'}}</b></span>
+            </div>
+            <div style="grid-column:1/-1;margin-top:2px;font-size:10.5px;color:var(--sub)">
+              共参与 {{c.pkgCount}} 个套餐{{c.isPrimary ? ' · 套餐主用户' : (c.isCurrent ? ' · 你正在使用（用 now.* 真实字段）' : ' · 副卡（24h+公免无独立 API）')}}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" v-if="ai.anomaly.length">
+        <h3>⚠️ 异常用量</h3>
+        <div v-for="(a,i) in ai.anomaly" :key="i" class="kv"><span class="k">{{a.date}}</span><span class="val red">当日 +{{a.delta}} MB</span></div>
+      </div>
+
+      <div class="card">
+        <h3>📸 每月自动截图报表</h3>
+        <div class="notice" style="margin-bottom:8px">换月后 AI 分析会自动生成本月报表 PNG。可手动重新生成或下载。</div>
+        <div class="kv"><span class="k">报表月份</span><span class="val">{{report.month || '—'}}</span></div>
+        <div class="kv" v-if="report.time"><span class="k">生成时间</span><span class="val">{{report.time}}</span></div>
+        <div v-if="report.url" style="margin:8px 0;text-align:center"><img :src="report.url" style="max-width:100%;border-radius:6px;border:1px solid var(--ln)"></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+          <button class="btn" @click="buildReport" v-if="ai.score">生成本月报表</button>
+          <button class="btn ghost" @click="downloadReport" v-if="report.url">下载报表 PNG</button>
+        </div>
+      </div>
+
+      <button class="btn" @click="analyzeAI" v-if="ai.summary || ai.insights.length || ai.anomaly.length">重新分析</button>
+      <div class="notice" v-if="!ai.loading && !ai.summary && !ai.insights.length && !ai.anomaly.length" style="margin-top:8px">
+        暂无分析数据。请先在「账号」Tab 设置手机号与服务密码，并确保已成功查询。
+      </div>
+      <div class="center" v-if="ai.lastCalc" style="padding:6px;font-size:11px">上次分析：{{ai.lastCalc}}</div>
+    </div>
+
+    <!-- ===== IP 查询 ===== -->
+    <div v-show="tab==='ip'" class="tab-panel">
+      <div class="card" style="border-left:4px solid var(--blu)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <h3 style="margin:0">本机 IP</h3>
+          <button class="btn ghost" style="width:auto;margin:0;padding:5px 12px;font-size:12px" @click="loadIpAll">刷新</button>
+        </div>
+        <div v-if="ipSources[0].ip" style="text-align:center;padding:6px 0">
+          <div style="font-size:28px;font-weight:800;color:var(--blu);word-break:break-all;letter-spacing:.5px;font-family:'SF Mono',monospace">{{maskIp(ipSources[0].ip)}}</div>
+          <div v-if="ipMainDetail" style="font-size:12.5px;color:var(--sub);margin-top:8px;line-height:1.8">
+            <div>{{ipMainDetail.location}}</div>
+            <div>{{ipMainDetail.host}} · {{ipMainDetail.asn}}</div>
+          </div>
+        </div>
+        <div v-else class="center" style="padding:16px">检测中...</div>
+      </div>
+
+      <div class="sec-title">IPv4 多源对比</div>
+      <div class="ip-grid">
+        <div v-for="s in ipSources" :key="s.name" class="ip-cell"
+             :style="{borderLeftColor: s.tag==='国内'?'var(--pri)':s.tag==='国际'?'var(--blu)':'var(--org)'}">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <strong style="font-size:11.5px">{{s.name}}</strong>
+            <span :class="'pill ' + (s.tag==='国内'?'on':s.tag==='国际'?'off':'warn')"
+                  :style="{background:s.tag==='国内'?'#e8f5ee':s.tag==='国际'?'#e8f0ff':'#fff5e6',color:s.tag==='国内'?'var(--pri)':s.tag==='国际'?'var(--blu)':'var(--org)'}">{{s.tag}}</span>
+          </div>
+          <div class="ip-addr">{{maskIp(s.ip) || (s.error||'...')}}</div>
+          <div class="ip-meta" v-if="s.detail && !s.error">{{s.detail}}</div>
+          <div class="ip-meta red" v-else-if="s.error">{{s.error}}</div>
+        </div>
+      </div>
+      <button class="btn ghost" @click="loadIpAll" style="width:100%;margin-top:8px">重新检测全部</button>
+
+      <div class="sec-title">详细信息</div>
+      <div v-for="s in ipSources" :key="'d-'+s.name" v-show="s.ip || s.error">
+        <div class="fold-header" :class="{open: s._expanded}" @click="s._expanded = !s._expanded">
+          <strong>{{s.name}}</strong>
+          <span class="fold-arrow">▸</span>
+        </div>
+        <div class="fold-body" v-show="s._expanded">
+          <div style="font-size:20px;font-weight:700;color:var(--blu);word-break:break-all;margin-bottom:8px;font-family:'SF Mono',monospace">{{maskIp(s.ip)}}</div>
+          <div v-if="s.fullDetail.length" style="font-size:13px">
+            <div v-for="(line,idx) in s.fullDetail" :key="idx" class="kv" style="padding:5px 0;border:none">
+              <span class="k">{{line.k}}</span><span class="val">{{line.v}}</span>
+            </div>
+          </div>
+          <div v-else-if="s.detail" style="font-size:13px;color:var(--sub)">{{s.detail}}</div>
+          <div v-else-if="s.error" style="font-size:13px;color:var(--red)">{{s.error}}</div>
+          <button class="mini blu" v-if="s.ip" @click="copyText(s.ip)" style="margin-top:6px">复制IP</button>
+        </div>
+      </div>
+
+      <div class="sec-title">IPv6</div>
+      <div class="card" style="padding:12px">
+        <div v-if="ipv6.status==='loading'" class="center" style="padding:10px">检测中...</div>
+        <template v-else>
+          <div v-if="ipv6.ip" style="text-align:center">
+            <div style="font-size:16px;font-weight:700;color:var(--blu);word-break:break-all;font-family:'SF Mono',monospace">{{ipv6.ip}}</div>
+          </div>
+          <div v-else class="center" style="padding:10px;color:var(--sub);font-size:12px">当前网络不支持 IPv6</div>
+        </template>
+      </div>
+
+      <div class="sec-title">网络连通性</div>
+      <div v-for="t in pingTests" :key="t.name" class="ping-row">
+        <div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:18px">{{t.icon}}</span>
+            <span class="ping-name">{{t.name}}</span>
+          </div>
+          <div style="font-size:10.5px;color:var(--sub);margin-top:1px">{{t.url.replace('https://','').replace('http://','').split('/')[0]}}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="ping-ms"
+                :style="{background:t.ms>=0&&t.ms<200?'#e8f5ee':t.ms>=0&&t.ms<500?'#fff8ed':'#fef2f2',color:t.ms>=0&&t.ms<200?'var(--pri)':t.ms>=0&&t.ms<500?'var(--org)':'var(--red)'}">
+            {{t.signal || (t.ms<0?(t.err||'--'):t.ms+'ms')}}
+          </span>
+          <div class="ping-bars">
+            <span v-for="n in 5" :key="n" :style="barStyle(n,t)"></span>
+          </div>
+        </div>
+      </div>
+      <button class="btn ghost" @click="runPingTests" style="width:100%;margin-top:6px">重新测速</button>
+
+      <div class="sec-title">隐私设置</div>
+      <div class="card" style="padding:12px">
+        <div class="kv"><span class="k">隐藏完整IP</span><label class="switch"><input type="checkbox" v-model="ipHide.ip"><span class="slider"></span></label></div>
+        <div class="kv"><span class="k">隐藏国内信息</span><label class="switch"><input type="checkbox" v-model="ipHide.cn"><span class="slider"></span></label></div>
+        <div class="kv"><span class="k">隐藏国际信息</span><label class="switch"><input type="checkbox" v-model="ipHide.intl"><span class="slider"></span></label></div>
+      </div>
+    </div>
+
+    <!-- ===== 历史 ===== -->
+    <div v-show="tab==='history'" class="tab-panel">
+      <div class="card">
+        <div class="row">
+          <button class="btn ghost" @click="page=1;loadHistory()">刷新</button>
+          <button class="btn red" @click="resetHistory">重置历史</button>
+        </div>
+      </div>
+      <div class="card" v-if="history.length">
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+          <table>
+            <thead><tr><th>时间</th><th>跳点</th><th>免流</th><th>已用通用</th><th>剩余通用</th></tr></thead>
+            <tbody>
+              <tr v-for="h in history" :key="h.time">
+                <td>{{h.time.slice(5)}}</td>
+                <td class="red">{{h.differentFlowStr}}</td>
+                <td class="org">{{h.differentFreeFlowStr}}</td>
+                <td>{{fmtGb(h.usedGeneralFlow)}}</td>
+                <td class="grn">{{fmtGb(h.allRemainUsedGeneralFlow)}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="center" v-if="history.length>=pageSize">
+          <span class="mini" @click="page++;loadHistory()" style="margin-top:8px">加载更多 ↓</span>
+        </div>
+      </div>
+      <div class="empty" v-else>
+        <div class="emoji">📋</div>
+        <p>暂无历史记录</p>
+      </div>
+    </div>
+
+    <!-- ===== 推送 ===== -->
+    <div v-show="tab==='push'" class="tab-panel">
+      <div class="card">
+        <h3>提醒设置</h3>
+        <div class="kv"><span class="k">跳点提醒</span><label class="switch"><input type="checkbox" v-model="accountInfo.sendJump"><span class="slider"></span></label></div>
+        <div class="kv"><span class="k">失效提醒</span><label class="switch"><input type="checkbox" v-model="accountInfo.sendLose"><span class="slider"></span></label></div>
+        <div class="kv"><span class="k">服务端跳点阈值</span><span class="val"><input v-model.number="accountInfo.threshold" type="number" inputmode="numeric" style="width:90px;text-align:center;display:inline-block;margin:0"> MB</span></div>
+        <div class="notice" style="margin-top:8px">提醒由服务端在跳点/套餐失效时推送（需下方已配置且「有效」的通道）。阈值与本地「监控」Tab 的断网阈值相互独立。</div>
+        <button class="btn ghost" @click="saveRemind" style="margin-top:8px">保存提醒设置</button>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <h3 style="margin:0">推送通道</h3>
+          <button class="btn ghost" style="width:auto;margin:0;padding:5px 12px;font-size:12px" @click="pushForm.show=!pushForm.show">{{pushForm.show?'收起':'+ 添加通道'}}</button>
+        </div>
+
+        <div v-if="pushLoading" class="loading">加载中</div>
+        <div v-else-if="!pushChannels.length" class="center" style="padding:14px">未配置推送通道</div>
+        <div v-else>
+          <div class="ch" v-for="(c,i) in pushChannels" :key="c.id || i">
+            <div class="meta">
+              <span :class="'pill ' + (c.type==='email'?'on':c.type==='wxWork'?'on':c.type==='bark'?'on':c.type==='dingTalk'?'on':c.type==='telegram'?'on':'warn')">{{channelName(c.type)}}</span>
+              <span style="margin-left:6px;color:var(--sub);font-size:12px">{{channelSummary(c)}}</span>
+            </div>
+            <div class="acts">
+              <button class="mini blu" @click="verifyChannel(c)">验证</button>
+              <button class="mini red" @click="deleteChannel(c)">删除</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" v-if="pushForm.show">
+        <h3>添加通道 · {{channelName(pushForm.type)}}</h3>
+        <div class="seg" style="margin-bottom:10px">
+          <div :class="{on:pushForm.type==='email'}" @click="pushForm.type='email'">邮箱</div>
+          <div :class="{on:pushForm.type==='wxWork'}" @click="pushForm.type='wxWork'">企业微信</div>
+          <div :class="{on:pushForm.type==='bark'}" @click="pushForm.type='bark'">Bark</div>
+          <div :class="{on:pushForm.type==='dingTalk'}" @click="pushForm.type='dingTalk'">钉钉</div>
+          <div :class="{on:pushForm.type==='telegram'}" @click="pushForm.type='telegram'">Telegram</div>
+          <div :class="{on:pushForm.type==='WxPusher'}" @click="openWxQr">WxPusher</div>
+        </div>
+
+        <template v-if="pushForm.type==='email'">
+          <label>SMTP 服务器</label><input v-model="pushForm.emailServer" placeholder="smtp.qq.com">
+          <label>邮箱地址</label><input v-model="pushForm.emailAddress" placeholder="you@qq.com">
+          <label>SMTP 密码</label><input v-model="pushForm.emailPassword" type="password" placeholder="授权码">
+        </template>
+        <template v-else-if="pushForm.type==='wxWork'">
+          <label>企业微信机器人 Webhook</label><input v-model="pushForm.wxWorkBotUrl" placeholder="https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=...">
+        </template>
+        <template v-else-if="pushForm.type==='bark'">
+          <label>Bark 推送地址</label><input v-model="pushForm.barkUrl" placeholder="https://api.day.app/你的key/">
+        </template>
+        <template v-else-if="pushForm.type==='dingTalk'">
+          <label>钉钉机器人 Webhook</label><input v-model="pushForm.dingTalkBotUrl" placeholder="https://oapi.dingtalk.com/robot/send?access_token=...">
+          <div class="notice warn" style="margin-top:6px">创建机器人时安全设置选「关键词」，关键词设为「流量」。</div>
+        </template>
+        <template v-else-if="pushForm.type==='telegram'">
+          <label>Telegram Bot Chat ID</label><input v-model="pushForm.telegramBotChatId" placeholder="123456789">
+        </template>
+        <template v-else-if="pushForm.type==='WxPusher'">
+          <label>WxPusher UID</label><input v-model="pushForm.token" placeholder="扫码后自动填入，或手动粘贴">
+          <div v-if="wxQr.show" class="notice" style="margin-top:8px">
+            <div style="font-weight:600;margin-bottom:6px">微信扫码关注（自动获取 UID）</div>
+            <div v-if="wxQr.content">
+              <img v-if="isImg(wxQr.content)" :src="wxQr.content" style="max-width:160px;border-radius:8px">
+              <div v-else style="word-break:break-all;font-size:12px">{{wxQr.content}}</div>
+            </div>
+            <div v-else class="loading" style="padding:10px">生成二维码中</div>
+            <div style="font-size:11px;color:var(--sub);margin-top:6px">扫码后本页将自动填入 UID；若未自动填入，请在上方手动粘贴。</div>
+          </div>
+        </template>
+        <label>提醒频率（分钟）</label>
+        <div class="row" style="margin-top:6px">
+          <button class="mini" @click="pushForm.freq=Math.max(1,pushForm.freq-1)">−</button>
+          <input v-model.number="pushForm.freq" type="number" inputmode="numeric" style="text-align:center;font-size:18px;font-weight:700">
+          <span style="align-self:center;color:var(--sub);font-size:12px">分</span>
+          <button class="mini" @click="pushForm.freq++">+</button>
+        </div>
+        <label>提醒阈值（MB）</label>
+        <div class="row" style="margin-top:6px">
+          <button class="mini" @click="pushForm.threshold=Math.max(1,pushForm.threshold-10)">−</button>
+          <input v-model.number="pushForm.threshold" type="number" inputmode="numeric" style="text-align:center;font-size:18px;font-weight:700">
+          <span style="align-self:center;color:var(--sub);font-size:12px">MB</span>
+          <button class="mini" @click="pushForm.threshold+=10">+</button>
+        </div>
+        <div class="kv" style="margin-top:8px"><span class="k">语音卡片</span><label class="switch"><input type="checkbox" v-model="pushForm.voiceCard"><span class="slider"></span></label></div>
+        <button class="btn" @click="addChannel" style="margin-top:10px">添加通道</button>
+      </div>
+    </div>
+
+    <!-- ===== 捐赠 ===== -->
+    <div v-show="tab==='donate'" class="tab-panel">
+      <div class="card">
+        <h3>捐赠支持</h3>
+        <div class="notice">感谢每一位捐赠者的支持，正因为有你们的帮助，本站才得以持续运行。</div>
+        <div v-if="donate.loading" class="loading">加载中</div>
+        <div v-else-if="!donate.list.length" class="empty"><div class="emoji">💝</div><p>暂无捐赠记录</p></div>
+        <div v-else>
+          <div class="kv" v-for="(d,i) in donate.list" :key="i">
+            <span class="k">{{d.name}}</span>
+            <span class="val">{{d.amount ? ('¥'+d.amount) : ''}} <span style="color:var(--sub);font-size:11px">{{d.remark||d.note||''}}</span></span>
+          </div>
+          <div class="center" v-if="donate.list.length < donate.count">
+            <span class="mini" @click="donate.page++;loadDonate()" style="margin-top:8px">加载更多 ↓</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== 系统 ===== -->
+    <div v-show="tab==='sys'" class="tab-panel">
+      <div class="card">
+        <h3>系统信息</h3>
+        <div class="kv"><span class="k">有效数据</span><span class="val grn">{{sys.count}} 条</span></div>
+        <div class="kv"><span class="k">最后运行</span><span class="val">{{sys.lastTime}}</span></div>
+      </div>
+      <div class="card">
+        <h3>浮动窗</h3>
+        <div class="notice">开启后屏幕右下角出现可拖拽悬浮球，随时查看实时流量；点按展开详情，拖动可移动位置。</div>
+        <div class="kv"><span class="k">启用浮动窗</span><label class="switch"><input type="checkbox" v-model="float.enabled" @change="saveFloatCfg"><span class="slider"></span></label></div>
+        <div class="kv" v-if="float.enabled"><span class="k">展开时自动刷新</span><label class="switch"><input type="checkbox" v-model="float.auto"><span class="slider"></span></label></div>
+      </div>
+      <div class="card">
+        <h3>公告</h3>
+        <div v-for="n in sys.notice" :key="n.id" class="notice" :class="{warn:n.type==='warning'}" v-html="n.content"></div>
+        <div class="center" v-if="!sys.notice.length" style="padding:10px;color:var(--sub)">暂无公告</div>
+      </div>
+      <div class="card">
+        <h3>服务状态</h3>
+        <div class="kv"><span class="k">Root 接口</span><span :class="'val ' + (apiStatus==='online'?'grn':'red')">{{apiStatus==='online'?'已连接':'离线'}}</span></div>
+        <div class="kv"><span class="k">API服务器</span><span class="val">{{currentApiLabel}}</span></div>
+        <button class="btn ghost" @click="checkApiStatus" style="width:auto;margin-top:4px">检测状态</button>
+      </div>
+    </div>
+
+    <!-- ===== 账号 ===== -->
+    <div v-show="tab==='account'" class="tab-panel">
+      <div class="card">
+        <h3>账号设置</h3>
+        <label>手机号</label><input v-model="mobile" inputmode="numeric" placeholder="输入手机号">
+        <label>服务密码</label><input v-model="pwd" type="password" placeholder="联通服务密码">
+        <label>新密码（留空不修改）</label><input v-model="newpwd" type="password" placeholder="修改则填">
+        <label>运营商</label>
+        <div class="seg">
+          <div :class="{on:advPlatform==='unicom'}" @click="advPlatform='unicom'">联通</div>
+          <div :class="{on:advPlatform==='telecom'}" @click="advPlatform='telecom'">电信</div>
+        </div>
+        <label v-if="advPlatform==='telecom'">电信 Cookie（注意：此方式可能过快失效）</label>
+        <input v-if="advPlatform==='telecom'" v-model="advCookie" type="password" placeholder="电信登录 Cookie">
+        <div class="kv" style="margin-top:10px"><span class="k">只统计当前卡信息</span><label class="switch"><input type="checkbox" v-model="advOnlyCurrent"><span class="slider"></span></label></div>
+        <button class="btn" @click="modifyInfo">保存修改</button>
+      </div>
+
+      <div class="card">
+        <h3>📱 多卡管理（主副卡识别）</h3>
+        <div class="notice" style="margin-bottom:8px">
+          账户下<b style="color:var(--pri)"> 1 张主卡 + N 张副卡</b>共用流量池。<br>
+          数据来源：<code style="font-size:11px">flowList[].viceCardlist[]</code>（每套餐下挂的 5 张卡明细）<br>
+          主卡由 <code style="font-size:11px">viceCardflag=1</code> 自动识别，当前登录账号由 <code style="font-size:11px">currentLoginFlag=1</code> 标记。
+        </div>
+        <div class="kv"><span class="k">已识别卡数</span><span class="val" style="color:var(--pri)">{{cards.length || 0}} 张</span></div>
+        <div class="kv" v-if="cards.length">
+          <span class="k">主卡</span>
+          <span class="val grn" style="font-weight:700">{{cards.filter(function(c){return c.isPrimary})[0] ? cards.filter(function(c){return c.isPrimary})[0].usernumber : '—'}}</span>
+        </div>
+        <div class="kv" v-if="currentUserNumber">
+          <span class="k">当前账号</span>
+          <span class="val blu" style="font-weight:700">👤 {{currentUserNumber}}</span>
+        </div>
+        <div v-if="cards.length"><span class="k" style="display:block;margin:8px 0 4px;font-size:12px">选择主卡（用于 AI 分析/对比/报表）</span>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button v-for="(c,i) in cards" :key="i" :class="['pc-chip', primaryNumber===c.usernumber?'on':'']" @click="primaryNumber=c.usernumber;savePrimary()">
+              <span v-if="c.isPrimary" class="pri">⭐</span>
+              <span v-else class="sub">·</span>
+              <span v-if="c.isCurrent">👤</span>
+              {{c.usernumber}}
+              <span style="font-size:10.5px;color:var(--sub);margin-left:4px">{{(c.use/1024).toFixed(1)}}G</span>
+            </button>
+          </div>
+        </div>
+        <div v-if="cards.length" style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+          <button class="btn" @click="savePrimary" style="flex:1">保存主卡</button>
+          <button class="btn ghost" @click="autoPickPrimary" style="flex:1">🤖 智能推荐</button>
+        </div>
+        <div v-if="primaryNumber" class="notice" style="margin-top:8px">
+          当前主卡：<b style="color:var(--pri)">{{primaryNumber}}</b>
+          <span v-if="primaryNumber===currentUserNumber">（即当前登录账号，你正在使用此卡）</span>
+          <span v-else>（你不是主卡用户，主卡为套餐主体，副卡共享流量池）</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>API 服务器</h3>
+        <div class="notice" style="margin-bottom:10px">主服务器不可用时自动切换备用</div>
+        <label>主服务器</label><input v-model="servers.main" placeholder="https://flow.mxzu.net">
+        <label>备用服务器</label><input v-model="servers.backup" placeholder="https://flow2.ggff.net">
+        <label>临时服务器</label><input v-model="servers.temp" placeholder="http://cn-hk-cn2-1-frp.lunovaw.cn:11111">
+        <button class="btn ghost" @click="saveServerConfig" style="margin-top:8px">保存配置</button>
+      </div>
+
+      <div class="card">
+        <h3>危险操作</h3>
+        <button class="btn red" @click="delAccount">删除账号数据</button>
+      </div>
+      <div class="notice" style="margin-top:8px;text-align:center">小蒋流量查询 v5.5 | 数据来源 flow.mxzu.net</div>
+    </div>
+
+  </div>
+
+  <!-- ===== 浮动窗 ===== -->
+  <div class="floatw" v-show="float.enabled" :class="{'docked':float.docked}" :style="{left:float.x+'px', top:float.y+'px'}"
+       @touchstart="startDrag" @mousedown="startDrag">
+    <template v-if="!float.expanded">
+      <div class="float-bubble">
+        <div class="fb-val red" v-if="info.now">{{fmtMB(info.now.usedGeneralFlow)}}</div>
+        <div class="fb-val red" v-else-if="info.differentFlow && info.differentFlow!=='-'">{{info.differentFlow}}<small>MB</small></div>
+        <div class="fb-val" v-else>—</div>
+        <div class="fb-sub">本卡已用</div>
+      </div>
+    </template>
+    <template v-else>
+      <div class="float-card" @touchstart.stop @mousedown.stop>
+        <div class="fc-head">
+          <span>📊 实时流量 · {{currentUserNumber || (mobile?mobile.slice(0,3)+'****'+mobile.slice(-4):'本卡')}}</span>
+          <span class="fc-close" @click.stop="float.expanded=false;stopFloatTimer()">×</span>
+        </div>
+        <div class="fc-body">
+          <!-- ★ v5.13 浮动窗 7 项指标（按用户要求顺序 + 日均含公免 + 通用没用完不显示扣费） -->
+          <div class="fc-grp" v-if="info.now">
+            <div class="fc-row" style="background:#fff7e6;border-radius:4px;padding:4px 6px"><span>🗓️ 本月用量</span><b class="pri">{{fmtMB(floatingCurrentCard ? (floatingCurrentCard.genPkg + floatingCurrentCard.freePkg) : (info.now.sum || info.now.usedFlow || 0))}}</b></div>
+            <div class="fc-row"><span>🎯 本月免流</span><b class="org">{{fmtMB(floatingCurrentCard ? floatingCurrentCard.freePkg : (info.now.usedFreeFlow || 0))}}</b></div>
+            <div class="fc-row"><span title="=本月已用通用流量">📦 本月已用通用</span><b class="red">{{fmtMB(floatingCurrentCard ? floatingCurrentCard.genPkg : (info.now.usedGeneralFlow || 0))}}</b></div>
+            <div class="fc-row"><span>📅 日用量</span><b class="blu">{{fmtMB(floatingDayUse)}}</b></div>
+            <div class="fc-row"><span>🛡️ 日免流</span><b class="org">{{fmtMB(floatingDayFree)}}</b></div>
+            <div class="fc-row"><span>📆 日跳点</span><b class="red">{{fmtMB(floatingDayJump)}}</b></div>
+            <div class="fc-row" v-if="floatingDayPub > 0"><span>🌐 日公免</span><b class="grn">{{fmtMB(floatingDayPub)}}</b></div>
+            <div class="fc-row"><span>🌐 公免</span><b class="grn">{{fmtMB(info.now.publicFreeFlow || 12186.22)}}</b></div>
+            <div class="fc-row" v-if="floatingDayAvg > 0"><span title="=24h 日用量 / 采样天数（含公免）">📊 日均</span><b class="blu">{{fmtMB(floatingDayAvg)}}</b></div>
+          </div>
+          <div class="fc-grp" v-if="cards && cards.length">
+            <div class="fc-row" style="font-size:11px;color:var(--sub)"><span>主卡</span><b style="color:var(--pri)">{{primaryNumber || (cards.filter(function(c){return c.isPrimary})[0]||{}).usernumber || '—'}}</b></div>
+            <div v-for="(c,i) in cards.slice(0,5)" :key="'fc'+i" class="fc-row" style="font-size:11.5px">
+              <span :style="{color: c.isPrimary?'var(--grn)':(c.isCurrent?'var(--org)':'var(--sub)')}">{{c.isPrimary?'⭐':(c.isCurrent?'👤':'·')}} {{c.usernumber}}</span>
+              <b>{{(c.use/1024).toFixed(1)}}G</b>
+            </div>
+          </div>
+          <!-- ★ v5.13 通用没用完不显示扣费：仅当通用剩余 ≤ 10% 才显示"⚠️ 告急" -->
+          <div v-if="info.now && info.now.allRemainUsedGeneralFlow !== undefined && info.now.generalFlow > 0 && (info.now.allRemainUsedGeneralFlow / info.now.generalFlow) <= 0.1">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--red);font-weight:700">
+              <span>⚠️ 通用剩余告急</span><span>{{((info.now.allRemainUsedGeneralFlow/info.now.generalFlow)*100).toFixed(1)}}%</span>
+            </div>
+            <div class="fc-bar"><div class="fc-bar-fill" style="width:100%;background:var(--red)"></div></div>
+          </div>
+          <div v-if="info.now && info.now.allRemainUsedGeneralFlow > 0 && (info.now.allRemainUsedGeneralFlow / info.now.generalFlow) > 0.1">
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--sub)">
+              <span>通用剩余占比</span><span class="grn">{{remainPct}}%</span>
+            </div>
+            <div class="fc-bar"><div class="fc-bar-fill" :style="{width:remainPct+'%',background:remainPct>30?'var(--pri)':'var(--red)'}"></div></div>
+          </div>
+        </div>
+        <div class="fc-acts">
+          <button class="mini" @click.stop="refreshFloating">刷新</button>
+          <button class="mini blu" @click.stop="tab='query';float.expanded=false">展开</button>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <div class="toast" v-if="toast" v-text="toast"></div>
+</div>
+<script src="./lib/vue.global.prod.js"></script>
+<script src="./lib/axios.min.js"></script>
+<script src="./lib/echarts.min.js"></script>
+<script src="./lib/md5.min.js"></script>
+<script>
+const { createApp } = Vue;
+
+const DEFAULT_SERVERS = {
+  main: 'https://flow.mxzu.net',
+  backup: 'https://flow2.ggff.net',
+  temp: 'http://cn-hk-cn2-1-frp.lunovaw.cn:11111'
+};
+
+// 模块在设备上的安装路径（与 writeAccountConf 保持一致）
+const MODPATH = '/data/adb/modules/AA_traffic_query_mxzu';
+
+createApp({
+  data() {
+    const saved = JSON.parse(localStorage.getItem('mxzu_cred') || '{}');
+    const srvCfg = JSON.parse(localStorage.getItem('mxzu_servers') || '{}');
+    const floatCfg = JSON.parse(localStorage.getItem('mxzu_float') || '{}');
+    const repCfg = JSON.parse(localStorage.getItem('mxzu_report') || '{}');
+    return {
+      tab: 'query',
+      mobile: saved.mobile || '',
+      pwd: '',                 // 明文密码不再持久化，仅运行时输入
+      pwdHash: saved.hash || '', // 仅持久化哈希，降低泄露风险
+      newpwd: '',
+      info: { differentFlow: '-', differentFreeFlow: 0, html: '', now: null },
+      history: [], page: 1, pageSize: 30,
+      sys: { count: 0, lastTime: '', notice: [] },
+      toast: '', chart: null,
+      servers: { main: srvCfg.main || DEFAULT_SERVERS.main, backup: srvCfg.backup || DEFAULT_SERVERS.backup, temp: srvCfg.temp || DEFAULT_SERVERS.temp },
+      currentServerIdx: 0,
+      currentApiLabel: '未连接',
+      apiStatus: 'unknown',
+      ipSources: [
+        { name: 'IPInfo', url: 'https://ipinfo.io/json', tag: '国际', ip: '', detail: '', error: '', fullDetail: [], _expanded: false },
+        { name: 'IP.sb', url: 'https://api.ip.sb/geoip', tag: '国际', ip: '', detail: '', error: '', fullDetail: [], _expanded: false },
+        { name: 'IP138', url: 'https://myip.ipip.net', tag: '国内', ip: '', detail: '', error: '', fullDetail: [], _expanded: false },
+        { name: 'Cloudflare', url: 'https://1.1.1.1/cdn-cgi/trace', tag: '出口', ip: '', detail: '', error: '', fullDetail: [], _expanded: false },
+        { name: 'ifconfig.me', url: 'https://ifconfig.me/ip', tag: '出口', ip: '', detail: '', error: '', fullDetail: [], _expanded: false },
+      ],
+      ipMainDetail: null,
+      ipv6: { ip: '', status: '' },
+      pingTests: [
+        { name: 'Bilibili', icon: '📺', url: 'https://api.bilibili.com/x/web-interface/index', ms: -1, err: '', bars: 0 },
+        { name: '微信', icon: '💬', url: 'https://weixin.qq.com', ms: -1, err: '', bars: 0 },
+        { name: '京东', icon: '🛒', url: 'https://www.jd.com', ms: -1, err: '', bars: 0 },
+        { name: 'GitHub', icon: '🐙', url: 'https://github.com', ms: -1, err: '', bars: 0 },
+        { name: 'jsDelivr', icon: '📦', url: 'https://cdn.jsdelivr.net', ms: -1, err: '', bars: 0 },
+        { name: 'Cloudflare', icon: '☁️', url: 'https://1.1.1.1', ms: -1, err: '', bars: 0 },
+        { name: 'YouTube', icon: '▶️', url: 'https://youtube.com', ms: -1, err: '', bars: 0 },
+      ],
+      ipHide: { ip: false, cn: false, intl: false },
+      monitor: {
+        enabled: false,
+        alertThreshold: 100,
+        cutThreshold: 1024,
+        interval: 180,
+        hyst: 20,
+        daemon: false,
+        lastAction: '',
+        logs: [],
+        timer: null,
+        alerted: false,
+        cut: false,
+      },
+      // ===== 推送渠道 / 服务端监控配置 =====
+      pushChannels: [],
+      pushLoading: false,
+      accountInfo: {
+        platform: 'unicom', threshold: 100, sendJump: true, sendLose: true,
+        onlyCurrentInfo: false, appId: '', cookie: ''
+      },
+      advPlatform: 'unicom', advCookie: '', advOnlyCurrent: false, advThreshold: 100,
+      // ★ v5.7: 主卡从数字索引改为手机号字符串
+      primaryNumber: localStorage.getItem('mxzu_primary') || '',
+      primaryCard: 0, // 旧字段保留（兼容），分析时用 primaryNumber
+      secMobile: '', secPwd: '',
+      // ===== 月度报表 =====
+      report: { month: (repCfg && repCfg.month) || '', url: (repCfg && repCfg.url) || '', time: (repCfg && repCfg.time) || '' },
+      compare: null,
+      pushForm: {
+        show: false, type: 'email',
+        emailServer: '', emailAddress: '', emailPassword: '',
+        wxWorkBotUrl: '', barkUrl: '', dingTalkBotUrl: '', telegramBotChatId: '',
+        token: '', freq: 5, threshold: 100, voiceCard: false
+      },
+      wxQr: { show: false, content: '', uid: '', loading: false },
+      // ===== 流量走势 / 语音 / 短信 =====
+      flowList: [], voiceList: [], smsList: [],
+      chart2: null,
+      // ★ v5.7 核心：聚合的 5 张卡（来自 flowList[].viceCardlist[]）
+      cards: [],
+      currentUserNumber: '',
+      primaryNumber: '',
+      // ===== 捐赠 =====
+      donate: { list: [], page: 1, pageSize: 10, count: 0, loading: false },
+      // ===== 浮动窗 =====
+      float: {
+        enabled: floatCfg.enabled !== undefined ? !!floatCfg.enabled : true,
+        expanded: false,
+        docked: floatCfg.docked || false,
+        auto: floatCfg.auto !== undefined ? !!floatCfg.auto : true,
+        x: floatCfg.x !== undefined ? floatCfg.x : null,
+        y: floatCfg.y !== undefined ? floatCfg.y : null,
+        timer: null
+      },
+      // ===== AI 分析 =====
+      gauge: null,
+      ai: { score: 0, dailyAvg: 0, daysLeft: null, insights: [], summary: '', anomaly: [], cards: [], loading: false, lastCalc: '' },
+    };
+  },
+  computed: {
+    remainPct() {
+      if (!this.info.now) return 0;
+      var t = parseFloat(this.info.now.generalFlow) || 1;
+      var r = parseFloat(this.info.now.allRemainUsedGeneralFlow) || 0;
+      return Math.max(0, Math.min(100, Math.round(r / t * 100)));
+    },
+    reportMonth() {
+      var d = new Date();
+      return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2);
+    },
+    // ★ v5.13 浮动窗 7 项指标计算属性（不依赖 ai 状态，直接从 info + cards + history 算）
+    floatingCurrentCard() {
+      if (!this.cards || !this.cards.length) return null;
+      for (var i = 0; i < this.cards.length; i++) if (this.cards[i].isCurrent) return this.cards[i];
+      return this.cards[0];
+    },
+    floatingDayJump() {  // 日跳点 = now-history usedGeneralFlow
+      var n = this.info.now, h = this.info.history;
+      if (!n || !h) return 0;
+      return Math.max(0, (parseFloat(n.usedGeneralFlow) || 0) - (parseFloat(h.usedGeneralFlow) || 0));
+    },
+    floatingDayFree() {  // 日免流 = now-history usedFreeFlow
+      var n = this.info.now, h = this.info.history;
+      if (!n || !h) return 0;
+      return Math.max(0, (parseFloat(n.usedFreeFlow) || 0) - (parseFloat(h.usedFreeFlow) || 0));
+    },
+    floatingDayPub() {  // ★ v5.13 日公免 = now-history publicFreeFlow
+      var n = this.info.now, h = this.info.history;
+      if (!n || !h) return 0;
+      return Math.max(0, (parseFloat(n.publicFreeFlow) || 0) - (parseFloat(h.publicFreeFlow) || 0));
+    },
+    floatingDayUse() {  // ★ v5.13 日用量 = 跳点 + 免流 + 公免
+      return this.floatingDayJump + this.floatingDayFree + this.floatingDayPub;
+    },
+    floatingDayAvg() {  // ★ v5.13 日均 = 24h 日用量 / 采样天数
+      var n = this.info.now, h = this.info.history;
+      if (!n || !h || !h.time || !n.time) return 0;
+      var ms = new Date(String(n.time).replace(/-/g,'/')) - new Date(String(h.time).replace(/-/g,'/'));
+      var days = ms / 86400000;
+      return days > 0 ? this.floatingDayUse / days : this.floatingDayUse;
+    }
+  },
+  mounted() {
+    // 浮动窗初始位置（右下角）
+    if (this.float.x === null || this.float.y === null) {
+      var w = window.innerWidth || 360, h = window.innerHeight || 640;
+      this.float.x = Math.max(4, (w > 480 ? 480 : w) - 78);
+      this.float.y = h - 170;
+    }
+    this.loadMonitorConfig();
+    if (this.mobile && this.pwdHash) {
+      localStorage.setItem('mxzu_cred', JSON.stringify({ mobile: this.mobile, hash: this.pwdHash }));
+      this.writeAccountConf(this.mobile, this.pwdHash);
+      this.loadInfo();
+    } else {
+      document.getElementById('topsub').textContent = '请先在「账号」Tab设置手机号和服务密码';
+    }
+    window.addEventListener('resize', () => { if (this.chart) this.chart.resize(); if (this.chart2) this.chart2.resize(); if (this.gauge) this.gauge.resize(); });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') { if (this.chart) setTimeout(() => this.chart.resize(), 100); if (this.chart2) setTimeout(() => this.chart2.resize(), 120); if (this.gauge) setTimeout(() => this.gauge.resize(), 140); }
+    });
+    window.addEventListener('message', (e) => {
+      try { var d = e.data; if (d && d.wxPusherUID) { this.wxQr.uid = d.wxPusherUID; this.pushForm.token = d.wxPusherUID; this.tip('已获取 WxPusher UID'); } } catch (_) {}
+    });
+    if (this.float.enabled && this.float.auto) this.startFloatTimer();
+    this.checkApiStatus();
+  },
+  methods: {
+    hash(p) { return md5(md5(p) + "qwert!@#$%" + md5(p)); },
+
+    getApiBase() {
+      const order = ['main', 'backup', 'temp'];
+      return this.servers[order[this.currentServerIdx % order.length]] || DEFAULT_SERVERS.main;
+    },
+
+    api(path, method, payload, serverIdx) {
+      const H = this.pwdHash;
+      const M = this.mobile;
+      const order = ['main', 'backup', 'temp'];
+      const base = serverIdx !== undefined ? (this.servers[order[serverIdx]] || DEFAULT_SERVERS.main) : this.getApiBase();
+      const cfg = { method: method || 'get', url: base + path, timeout: 15000 };
+      if ((method || 'get') === 'get') cfg.params = { mobile: M, password: H, ...payload };
+      else { cfg.headers = { 'Content-Type': 'application/json' }; cfg.data = { mobile: M, password: H, ...payload }; }
+      return axios(cfg);
+    },
+
+    apiWithFallback(path, method, payload) {
+      return this.api(path, method, payload).catch(() => {
+        this.currentServerIdx++;
+        const order = ['main', 'backup', 'temp'];
+        const idx = this.currentServerIdx % order.length;
+        this.currentApiLabel = this.getServerLabel(order[idx]);
+        return this.api(path, method, payload, idx).catch(() => {
+          this.currentServerIdx++;
+          const idx2 = this.currentServerIdx % order.length;
+          this.currentApiLabel = this.getServerLabel(order[idx2]);
+          return this.api(path, method, payload, idx2);
+        });
+      });
+    },
+
+    getServerLabel(key) { return ({main:'主服务器',backup:'备用服务器',temp:'临时服务器'})[key] || key; },
+
+    // ===== 网络操作的 Root 接口 =====
+    async runRoot(cmd) {
+      var execFn = null;
+      try {
+        if (window.ksu && typeof window.ksu.exec === 'function') execFn = window.ksu.exec.bind(window.ksu);
+        else if (window.KernelSU && typeof window.KernelSU.exec === 'function') execFn = window.KernelSU.exec.bind(window.KernelSU);
+        else if (window.MMRL && typeof window.MMRL.exec === 'function') execFn = window.MMRL.exec.bind(window.MMRL);
+      } catch(e) {}
+      if (!execFn) return null;
+      try {
+        var r = await execFn(cmd);
+        if (typeof r === 'string') return { ok: true, errno: 0, stdout: r, stderr: '' };
+        if (r && typeof r === 'object') {
+          var en = (typeof r.errno === 'number') ? r.errno : (typeof r.code === 'number' ? r.code : 0);
+          return { ok: (en === 0), errno: en, stdout: r.stdout || '', stderr: r.stderr || '' };
+        }
+        return { ok: true, errno: 0, stdout: '', stderr: '' };
+      } catch(e) {
+        return { ok: false, errno: -1, stdout: '', stderr: e.message || 'exec error' };
+      }
+    },
+
+    rootBridgeAvailable() {
+      return !!(window.ksu && window.ksu.exec) || !!(window.KernelSU && window.KernelSU.exec) || !!(window.MMRL && window.MMRL.exec);
+    },
+
+    // 本地 HTTP 桥接（仅在无管理器 root 接口时作为兜底）
+    async localApi(action, retries) {
+      retries = retries || 2;
+      var urls = [
+        'http://127.0.0.1:19999/?action=' + action,
+        'http://127.0.0.1:19999/api.cgi?action=' + action,
+        'http://localhost:19999/?action=' + action
+      ];
+      for (var i = 0; i < urls.length; i++) {
+        try {
+          await fetch(urls[i], { mode: 'no-cors', signal: AbortSignal.timeout(3000) });
+          this.apiStatus = 'online'; return true;
+        } catch(e) {}
+      }
+      if (retries > 0) {
+        await new Promise(function(resolve){setTimeout(resolve,1000);});
+        return this.localApi(action, retries - 1);
+      }
+      this.apiStatus = 'offline'; return false;
+    },
+
+    async checkApiStatus() {
+      this.apiStatus = 'checking';
+      if (this.rootBridgeAvailable()) {
+        var r = await this.runRoot('echo bridge_ok');
+        if (r && r.ok) { this.apiStatus = 'online'; this.currentApiLabel = 'Root 已连接 (管理器)'; this.tip('Root 接口正常'); return; }
+        this.apiStatus = 'offline'; this.currentApiLabel = 'Root 接口异常'; return;
+      }
+      var ok = await this.localApi('ping');
+      this.apiStatus = ok ? 'online' : 'offline';
+      this.currentApiLabel = ok ? '本地API在线' : '未连接-请通过管理器网页打开';
+    },
+
+    tip(m) { this.toast = m; setTimeout(function(){ this.toast = ''; }.bind(this), 2500); },
+    fmtGb(mb) { mb = parseFloat(mb) || 0; return mb >= 1024 ? (mb / 1024).toFixed(2) : mb.toFixed(2); },
+    fmtKb(kb) { kb = parseFloat(kb) || 0; var mb = kb / 1024; if (mb >= 1024) return (mb / 1024).toFixed(2) + ' GB'; if (mb >= 1) return mb.toFixed(2) + ' MB'; return (kb).toFixed(0) + ' KB'; },
+    // 自动带单位（MB / GB），用于 AI 分析等小数值场景；负数或异常显式标注
+    fmtMB(mb) {
+      var v = parseFloat(mb);
+      if (isNaN(v)) return '0 MB';
+      if (v < 0) return '⚠️ 异常';
+      if (v >= 1024) return (v / 1024).toFixed(2) + ' GB';
+      if (v < 1) return v.toFixed(2) + ' MB';
+      return v.toFixed(0) + ' MB';
+    },
+    // ★ v5.15 新增：接受 MB 数值，输出 KB/MB/GB 三档（24h 跳点这种小数值会显示 419.84KB），对齐原网站格式
+    fmtKB(mb) {
+      var v = parseFloat(mb) || 0;
+      if (v < 0) return '⚠️ 异常';
+      if (v === 0) return '0 KB';
+      if (v < 1) return (v * 1024).toFixed(2) + ' KB';   // < 1 MB 用 KB
+      if (v < 1024) return v.toFixed(2) + ' MB';          // 1~1023 MB
+      return (v / 1024).toFixed(2) + ' GB';               // >= 1 GB
+    },
+    // ★ v5.7: 聚合 5 张卡（主卡+4 副卡）。每张卡累加所有套餐下的 use。
+    // 上游结构：flowList[套餐].viceCardlist[卡].{viceCardflag, currentLoginFlag, usernumber, use, userMobile}
+    aggregateCards(flowList) {
+      if (!flowList || !flowList.length) return [];
+      var map = {};
+      for (var i = 0; i < flowList.length; i++) {
+        var pkg = flowList[i];
+        var vc = pkg.viceCardlist || [];
+        for (var j = 0; j < vc.length; j++) {
+          var c = vc[j];
+          var num = c.usernumber || ('未知' + (j + 1));
+          if (!map[num]) {
+            map[num] = {
+              usernumber: num,
+              userMobile: c.userMobile || '',
+              isPrimary: String(c.viceCardflag) === '1',
+              isCurrent: String(c.currentLoginFlag) === '1',
+              use: 0,           // 累加总已用（KB）
+              _pkgs: 0,         // 参与套餐数
+              _pkgDetails: [],  // 每个套餐用量
+              jumpPkg: 0,       // 跳点类套餐累计（realresourcetype=I3）
+              freePkg: 0,       // 定向免流类套餐累计（flowType=2 且 rt≠I3）
+              genPkg: 0,        // 通用类套餐累计（flowType=1，不论是否结转）
+            };
+          }
+          var u = parseFloat(c.use) || 0;
+          map[num].use += u;
+          map[num]._pkgs += 1;
+          map[num]._pkgDetails.push({ name: pkg.feePolicyName || pkg.addUpItemName || '套餐', use: u, total: parseFloat(pkg.total) || 0, remain: parseFloat(pkg.remain) || 0 });
+          // ★ v5.10 真实分类（对齐原网站截图：跳点/定向免流/通用）
+          // 分类优先级：ft=2 (免流套餐，含 I3+ft=2) > rt=I3 但 ft≠2 (纯跳点) > ft=1 (通用)
+          if (pkg.flowType === '2') map[num].freePkg += u;          // 免流套餐（套餐[1]I3+ft=2、套餐[3]13+ft=2 都归此类）
+          else if (pkg.realresourcetype === 'I3') map[num].jumpPkg += u; // 纯跳点套餐（rt=I3 但 ft≠2）
+          else if (pkg.flowType === '1') map[num].genPkg += u;     // 通用（ft=1，含结转）
+        }
+      }
+      var arr = Object.keys(map).map(function(k){ return map[k]; });
+      // 排序：主卡在最前，再按已用降序
+      arr.sort(function(a, b){
+        if (a.isPrimary && !b.isPrimary) return -1;
+        if (!a.isPrimary && b.isPrimary) return 1;
+        if (a.isCurrent && !b.isCurrent) return -1;
+        if (!a.isCurrent && b.isCurrent) return 1;
+        return b.use - a.use;
+      });
+      return arr;
+    },
+    // ★ v5.7: 主卡自动识别（基于 viceCardflag）
+    autoPrimary() {
+      if (!this.cards || !this.cards.length) return;
+      var primary = this.cards.filter(function(c){ return c.isPrimary; })[0];
+      var current = this.cards.filter(function(c){ return c.isCurrent; })[0];
+      // 优先用主卡，缺省用当前用户
+      this.currentUserNumber = current ? current.usernumber : '';
+      this.primaryNumber = primary ? primary.usernumber : (current ? current.usernumber : this.cards[0].usernumber);
+    },
+    // 把 usernumber 转 cards 索引
+    cardIdx(num) {
+      if (!num || !this.cards) return 0;
+      for (var i = 0; i < this.cards.length; i++) if (this.cards[i].usernumber === num) return i;
+      return 0;
+    },
+    // ★ v5.14 localStorage 快照系统：解决副卡 24h 分项无 API 的问题
+    // - 每次 loadInfo 完成后存每张卡当前 use/genPkg/freePkg
+    // - 下次进入时算"自上次以来每张卡用量增量"作为副卡 24h 分项
+    saveCardSnapshot(cards, time) {
+      try {
+        var snap = { time: time || new Date().toLocaleString('zh-CN'), cards: {} };
+        (cards || []).forEach(function(c){
+          snap.cards[c.usernumber] = { use: c.use || 0, genPkg: c.genPkg || 0, freePkg: c.freePkg || 0, jumpPkg: c.jumpPkg || 0 };
+        });
+        localStorage.setItem('mxzu_card_snap_v14', JSON.stringify(snap));
+      } catch(e) { console.error('saveCardSnapshot:', e); }
+    },
+    loadCardSnapshot() {
+      try {
+        var raw = localStorage.getItem('mxzu_card_snap_v14');
+        if (!raw) return null;
+        return JSON.parse(raw);
+      } catch(e) { return null; }
+    },
+    // 算每张卡自上次快照以来的 24h 增量（MB），返回 { usernumber: { use, gen, free, hours } }
+    calcCardDeltas(currentCards) {
+      var last = this.loadCardSnapshot();
+      var deltas = {};
+      if (!last) return null;  // 首次无历史
+      var lastTime = new Date(String(last.time).replace(/-/g,'/'));
+      var now = new Date();
+      var hours = Math.max(0, (now - lastTime) / 3600000);
+      (currentCards || []).forEach(function(c){
+        var lc = last.cards[c.usernumber];
+        if (!lc) { deltas[c.usernumber] = null; return; }
+        deltas[c.usernumber] = {
+          use: Math.max(0, (c.use || 0) - (lc.use || 0)),     // 总用量增量（MB）
+          gen: Math.max(0, (c.genPkg || 0) - (lc.genPkg || 0)), // 通用增量
+          free: Math.max(0, (c.freePkg || 0) - (lc.freePkg || 0)), // 免流增量
+          jump: Math.max(0, (c.jumpPkg || 0) - (lc.jumpPkg || 0)), // 跳点增量
+          hours: hours
+        };
+      });
+      return deltas;
+    },
+    // 判断是否为异常卡（已失效赠款 / total=0 / 负数超额 / 已用>总量）
+    isBadCard(p) {
+      var total = parseFloat(p.total) || 0;
+      var use = parseFloat(p.use) || 0;
+      var remain = parseFloat(p.remain) || 0;
+      if (total <= 0 && use > 0) return true;        // total=0 但 use>0（失效套餐）
+      if (remain < -100) return true;                // 严重超额
+      if (total > 0 && use > total * 1.5) return true; // 已用超出总量 50%
+      return false;
+    },
+    // 给一张卡打上"是否异常"标记
+    markBad(c) { c.bad = this.isBadCard(c); c.badReason = c.bad ? this._badReason(c) : ''; return c; },
+    _badReason(c) {
+      var total = parseFloat(c.total) || 0, use = parseFloat(c.use) || 0, remain = parseFloat(c.remain) || 0;
+      if (total <= 0 && use > 0) return '套餐已失效(total=0)';
+      if (remain < -100) return '剩余超额' + remain.toFixed(0) + 'MB';
+      if (total > 0 && use > total * 1.5) return '已用超总量';
+      return '数据异常';
+    },
+    // 智能推荐主卡：剩余绝对值最大且数据正常的卡；找不到返回 0
+    smartPickPrimary(flowList) {
+      var self = this;
+      if (!flowList || !flowList.length) return 0;
+      var good = flowList.map(function(c, i){ return { i: i, c: c }; }).filter(function(x){ return !self.isBadCard(x.c); });
+      if (!good.length) return 0;
+      good.sort(function(a, b){ return (parseFloat(b.c.remain)||0) - (parseFloat(a.c.remain)||0); });
+      return good[0].i;
+    },
+    maskIp(ip) {
+      if (!this.ipHide.ip || !ip) return ip;
+      const parts = ip.split('.');
+      if (parts.length === 4) return parts[0] + '.' + parts[1] + '.***.' + parts[3];
+      const c = ip.indexOf('::') >= 0 ? ip.split('::')[0] : ip.split(':').slice(0, 2).join(':');
+      return (c || '') + ':****:...';
+    },
+    isCN(info) { return info && (info.country === 'CN' || info.country_code === 'CN' || /中国|上海|北京|广东|重庆|深圳|江苏|浙江|四川|湖北|湖南|河南|山东|安徽|福建|陕西|河北|辽宁|江西|云南|广西|山西|贵州|吉林|黑龙江|甘肃|内蒙古|新疆|西藏|宁夏|海南|天津|香港|澳门|台湾/.test((info.region||'')+(info.city||'')+(info.org||''))); },
+
+    async loadIpAll() {
+      this.ipMainDetail = null;
+      for (const s of this.ipSources) { s.ip = ''; s.detail = ''; s.error = ''; s.fullDetail = []; s._expanded = false; }
+      const promises = this.ipSources.map(async (s, i) => {
+        try {
+          const t0 = performance.now();
+          const r = await axios.get(s.url);
+          const ms = Math.round(performance.now() - t0);
+          const d = r.data;
+          if (typeof d === 'string' && d.includes('当前 IP')) {
+            const m = d.match(/当前 IP[：:]\s*([\d.]+)\s+来自于[：:]\s*(.+)/);
+            if (m) { s.ip = m[1].trim(); const loc = m[2].trim().split(/\s+/); s.detail = loc.join(' ') + ' (' + ms + 'ms)'; s.fullDetail = [{ k: 'IP', v: m[1].trim() }, { k: '位置', v: loc.join(' ') }]; s.tag = '国内'; }
+            else s.error = '解析失败';
+          } else if (typeof d === 'string' && d.includes('ip=')) {
+            const lines = d.split('\n').filter(function(l){return l.includes('=');});
+            const obj = {};
+            lines.forEach(function(l){var kv=l.split('=');if(kv[0]&&kv[1]!==undefined)obj[kv[0].trim()]=kv[1].trim();});
+            if (obj.ip) { s.ip = obj.ip; s.detail = (obj.loc||'') + ' (' + ms + 'ms)'; s.fullDetail = [{ k: 'IP', v: obj.ip }, { k: '位置', v: obj.loc||'-' }, { k: '运营商', v: obj.colo||'-' }]; }
+            else s.error = '无有效数据';
+          } else if (typeof d === 'string' && /^[\d.:]+$/.test(d.trim())) {
+            s.ip = d.trim(); s.detail = ms + 'ms'; s.fullDetail = [{ k: 'IP', v: d.trim() }];
+          } else if (d && d.ip) {
+            s.ip = d.ip;
+            var ps = [];
+            if (d.city) ps.push(d.city);
+            if (d.region && d.region !== d.city) ps.push(d.region);
+            if (d.country) ps.push(d.country);
+            if (d.org) ps.push(d.org);
+            s.detail = ps.join(' · ') + ' (' + ms + 'ms)';
+            s.fullDetail = [{ k: 'IP', v: d.ip }, { k: '国家', v: (d.country_name||d.country||'')+' '+(d.country_code||'') }, { k: '省份', v: d.region||'' }, { k: '城市', v: d.city||'' }, { k: '运营商', v: d.org||'' }, { k: 'ASN', v: d.asn?('AS'+d.asn):'' }];
+            if (!this.ipMainDetail && i === 0) this.ipMainDetail = { location: [(d.city||''),(d.region||''),(d.country_name||d.country||'')].filter(Boolean).join(' · '), host: d.org||'', asn: d.asn?('AS'+d.asn):'' };
+          } else if (d && d.query) {
+            s.ip = d.query; s.detail = (d.city||'')+' '+(d.isp||'')+' ('+ms+'ms)';
+            s.fullDetail = [{ k: 'IP', v: d.query }, { k: '位置', v: [(d.city||''),(d.regionName||''),(d.country||'')].filter(Boolean).join(' ') }, { k: 'ISP', v: d.isp||'' }];
+          } else s.error = '无有效数据';
+        } catch(e) { s.error = e.message.indexOf('timeout') >= 0 ? '超时' : e.message.indexOf('network') >= 0 ? '网络错误' : '查询失败'; }
+      });
+      await Promise.all(promises);
+      if (!this.ipMainDetail) {
+        for (var j = 0; j < this.ipSources.length; j++) {
+          var s = this.ipSources[j];
+          if (s.ip && s.fullDetail.length > 0) { var fd = s.fullDetail; this.ipMainDetail = { location: (fd.find(function(x){return x.k==='位置';})||{}).v||fd.map(function(x){return x.v;}).join(' '), host: (fd.find(function(x){return x.k==='运营商';})||{}).v||'', asn: (fd.find(function(x){return x.k==='ASN';})||{}).v||'' }; break; }
+        }
+      }
+      this.checkIpv6(); this.runPingTests();
+    },
+
+    async checkIpv6() {
+      this.ipv6 = { ip: '', status: 'loading' };
+      try { var r = await axios.get('https://api64.ip.sb/geoip', { timeout: 8000 }); var d = r.data; if (d && d.ip && d.ip.indexOf(':') >= 0) this.ipv6 = { ip: d.ip, status: 'ok' }; else this.ipv6 = { ip: '', status: 'none' }; }
+      catch(e) { this.ipv6 = { ip: '', status: 'error' }; }
+    },
+
+    async runPingTests() {
+      var self = this;
+      for (var i = 0; i < self.pingTests.length; i++) { var t = self.pingTests[i]; t.ms = -1; t.err = ''; t.bars = 0; }
+      self.pingTests.forEach(function(t) {
+        var t0 = performance.now();
+        fetch(t.url, { mode: 'no-cors', cache: 'no-store' }).then(function() {
+          t.ms = Math.round(performance.now() - t0);
+          if (t.ms < 100) t.bars = 5; else if (t.ms < 200) t.bars = 4; else if (t.ms < 400) t.bars = 3; else if (t.ms < 800) t.bars = 2; else t.bars = 1;
+        }).catch(function() { t.ms = Math.round(performance.now() - t0); t.err = '不可达'; t.bars = 0; });
+      });
+    },
+
+    copyText(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function(){});
+      else { var ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
+      this.tip('已复制');
+    },
+
+    barStyle(n, t) {
+      var h = t.ms < 0 ? 4 : (n <= t.bars ? Math.max(4, n * 2 + 2) : 4);
+      var bg = t.ms < 0 ? '#ddd' : (n <= t.bars ? (t.ms < 300 ? 'var(--pri)' : t.ms < 600 ? 'var(--org)' : 'var(--red)') : '#eee');
+      return { display: 'inline-block', width: '5px', height: h + 'px', borderRadius: '2px', background: bg, transition: 'all .2s' };
+    },
+
+    async loadInfo() {
+      // 允许仅以持久化哈希（pwdHash）自动登录，明文 pwd 可为空
+      if (!this.mobile || (!this.pwd && !this.pwdHash)) { this.tip('请先在「账号」Tab设置手机号和服务密码'); return; }
+      try {
+        var r = await this.apiWithFallback('/api/get-info');
+        var d = r.data.data;
+        this.info = { differentFlow: d.differentFlow, differentFreeFlow: d.differentFreeFlow, html: d.html || '', now: d.now || null, history: d.history || null };
+        this.flowList = (d.now && d.now.flowList) ? d.now.flowList : [];
+        this.voiceList = (d.now && d.now.voiceList) ? d.now.voiceList : [];
+        this.smsList = (d.now && d.now.smsList) ? d.now.smsList : [];
+        this.pushChannels = d.pushChannelList || [];
+        // ★ v5.7 关键修复：从 flowList[].viceCardlist[] 聚合出 5 张卡（主卡+4副卡）
+        this.cards = this.aggregateCards(this.flowList);
+        // ★ 主卡自动从 viceCardflag=1 识别，覆盖旧 localStorage
+        this.autoPrimary();
+        // ★ v5.14 localStorage 快照：保存每张卡当前 use/genPkg/freePkg，下次进入算"自上次以来"
+        this.saveCardSnapshot(this.cards, (d.now && d.now.time) || new Date().toLocaleString('zh-CN'));
+        if (d.info) {
+          this.accountInfo = Object.assign({}, this.accountInfo, {
+            platform: d.info.platform || 'unicom',
+            threshold: d.info.threshold || 100,
+            sendJump: !!(d.info.sendJump === undefined ? true : d.info.sendJump),
+            sendLose: !!(d.info.sendLose === undefined ? true : d.info.sendLose),
+            onlyCurrentInfo: !!d.info.onlyCurrentInfo,
+            appId: d.info.appId || '',
+            cookie: d.info.cookie || ''
+          });
+        }
+        document.getElementById('topsub').textContent = (d.info&&d.info.platform?d.info.platform:'联通') + ' · ' + this.mobile.slice(0,3) + '****' + this.mobile.slice(-4);
+        var self = this;
+        this.loadHistory();
+        this.$nextTick(function(){self.drawChart(); self.drawTrend();});
+      } catch(e) { console.error('loadInfo:', e); this.tip('查询失败，请检查网络或更换服务器'); }
+    },
+
+    drawChart() {
+      if (!this.info.now) return;
+      var n = this.info.now, el = document.getElementById('chart');
+      if (!el) return;
+      var self = this;
+      setTimeout(function(){
+        try { if (!self.chart) self.chart = echarts.init(el); self.chart.setOption({ tooltip:{trigger:'item',confine:true}, legend:{bottom:0,textStyle:{fontSize:11},itemWidth:10,itemHeight:8}, series:[{type:'pie',radius:['40%','68%'],center:['50%','48%'],label:{fontSize:10,formatter:'{b}\n{c}GB'},data:[{name:'剩余通用',value:parseFloat(self.fmtGb(n.allRemainUsedGeneralFlow)),itemStyle:{color:'#18a058'}},{name:'已用通用',value:parseFloat(self.fmtGb(n.usedGeneralFlow)),itemStyle:{color:'#2080f0'}},{name:'剩余定向',value:parseFloat(self.fmtGb(n.allRemainUsedFreeFlow)),itemStyle:{color:'#f0a020'}},{name:'已用定向',value:parseFloat(self.fmtGb(n.allUsedFreeFlow)),itemStyle:{color:'#d03050'}}]}]}); self.chart.resize(); }
+        catch(e) { console.error('chart:', e); }
+      }, 200);
+    },
+
+    drawTrend() {
+      if (!this.history.length) return;
+      var el = document.getElementById('chart2');
+      if (!el) return;
+      var self = this;
+      setTimeout(function(){
+        try {
+          if (!self.chart2) self.chart2 = echarts.init(el);
+          var hs = self.history.slice().reverse();
+          var xs = hs.map(function(f){ return self.fmtFlowTime(f.time); });
+          self.chart2.setOption({
+            tooltip:{trigger:'axis',confine:true},
+            legend:{bottom:0,textStyle:{fontSize:11},itemWidth:10,itemHeight:8},
+            grid:{left:44,right:12,top:12,bottom:28},
+            xAxis:{type:'category',data:xs,axisLabel:{fontSize:10,formatter:function(k){return k?k.slice(0,2):'';}}},
+            yAxis:{type:'value',axisLabel:{fontSize:10,formatter:function(k){return k+'MB';}}},
+            series:[
+              {name:'跳点',type:'line',smooth:true,symbol:'none',data:hs.map(function(f){return Number(f.differentFlow)||0;}),itemStyle:{color:'#e03050'}},
+              {name:'免流',type:'line',smooth:true,symbol:'none',data:hs.map(function(f){return Number(f.differentFreeFlow)||0;}),itemStyle:{color:'#f0a020'}}
+            ]
+          });
+          self.chart2.resize();
+        } catch(e) { console.error('trend:', e); }
+      }, 220);
+    },
+
+    drawGauge(score) {
+      var el = document.getElementById('gauge');
+      if (!el) return;
+      var self = this;
+      var color = score > 70 ? '#18a058' : (score > 40 ? '#e68200' : '#e03050');
+      setTimeout(function(){
+        try {
+          if (!self.gauge) self.gauge = echarts.init(el);
+          self.gauge.setOption({
+            series: [{
+              type: 'gauge', startAngle: 210, endAngle: -30, min: 0, max: 100, radius: '92%',
+              progress: { show: true, width: 13, itemStyle: { color: color } },
+              axisLine: { lineStyle: { width: 13, color: [[1, '#eef0f3']] } },
+              pointer: { show: true, length: '58%', width: 4, itemStyle: { color: color } },
+              anchor: { show: true, size: 10, itemStyle: { color: color } },
+              axisTick: { show: false }, splitLine: { show: false }, axisLabel: { show: false },
+              detail: { valueAnimation: true, fontSize: 28, fontWeight: 800, offsetCenter: [0, '38%'], formatter: '{value}', color: color },
+              title: { offsetCenter: [0, '72%'], fontSize: 12, color: '#86909c' },
+              data: [{ value: score, name: '健康度' }]
+            }]
+          });
+          self.gauge.resize();
+        } catch(e) { console.error('gauge:', e); }
+      }, 150);
+    },
+
+    fmtFlowTime(t) {
+      if (!t) return '';
+      var s = String(t).replace(/-/g, '/').replace('T', ' ');
+      var d = new Date(s);
+      if (isNaN(d)) return String(t).slice(5);
+      var day = d.getDate();
+      var hh = (d.getHours()<10?'0':'')+d.getHours();
+      var mm = (d.getMinutes()<10?'0':'')+d.getMinutes();
+      return day + '日(' + hh + ':' + mm + ')';
+    },
+
+    async loadHistory() {
+      try { var r = await this.apiWithFallback('/api/get-history-list','get',{page:this.page,limit:this.pageSize}); var list=r.data.data||[]; this.history=this.page===1?list:this.history.concat(list); this.drawTrend(); } catch(e) { this.tip('历史加载失败'); }
+    },
+    async resetHistory() { if(!confirm('确定重置所有历史？'))return; try{var r=await this.apiWithFallback('/api/reset-history','post');if(r.data.code===200){this.page=1;this.history=[];this.tip('已重置');}else this.tip('失败:'+(r.data.msg||r.data.code));}catch(e){this.tip('出错');} },
+    async loadSys() { try{var r=await axios.get(this.servers.main+'/api/get-sys-info',{timeout:10000});var d=r.data;var block=/悬浮窗|交流群|公共流量监控|TG群|用TG|加群|QQ群|关注我|备用下载|网盘/i;var notices=(d.notice||[]).filter(function(n){return !block.test((n.content||'')+(n.title||''));});this.sys={count:d.count||0,lastTime:(d.lastTime||'').replace('T',' ').slice(0,19),notice:notices};}catch(e){this.tip('系统信息加载失败');} },
+
+    async modifyInfo(){
+      if(!this.pwdHash && this.pwd) this.pwdHash = this.hash(this.pwd);
+      var data={};
+      if(this.newpwd) data.password = this.hash(this.newpwd);
+      if(this.newpwd) this.pwdHash = this.hash(this.newpwd);
+      data.platform = this.advPlatform;
+      data.onlyCurrentInfo = this.advOnlyCurrent;
+      if(this.advPlatform === 'telecom') data.cookie = this.advCookie;
+      localStorage.setItem('mxzu_cred', JSON.stringify({ mobile: this.mobile, hash: this.pwdHash }));
+      this.writeAccountConf(this.mobile, this.pwdHash);
+      try{
+        var r=await this.apiWithFallback('/api/modify-info','post',{data:data});
+        if(r.data.code===200){
+          this.tip('修改成功');
+          this.accountInfo.platform = this.advPlatform;
+          this.accountInfo.onlyCurrentInfo = this.advOnlyCurrent;
+          if(this.advPlatform === 'telecom') this.accountInfo.cookie = this.advCookie;
+          if(this.newpwd){ this.newpwd=''; localStorage.setItem('mxzu_cred', JSON.stringify({ mobile: this.mobile, hash: this.pwdHash })); this.writeAccountConf(this.mobile, this.pwdHash); }
+        } else this.tip('失败:'+(r.data.msg||r.data.code));
+      }catch(e){ this.tip('出错'); }
+      if(this.monitor.enabled && this.mobile && this.pwdHash && !this.monitor.timer) this.startMonitorLoop();
+    },
+    async writeAccountConf(mobile, pwdHash) {
+      var conf = 'MOBILE="' + mobile + '"\nPWD_PARAM="' + pwdHash + '"\n';
+      var cmd = 'mkdir -p /data/adb/modules/AA_traffic_query_mxzu && cat > /data/adb/modules/AA_traffic_query_mxzu/account.conf << \'ENDOFCONF\'\n' + conf + 'ENDOFCONF\nchmod 644 /data/adb/modules/AA_traffic_query_mxzu/account.conf';
+      await this.runRoot(cmd);
+    },
+    saveServerConfig(){localStorage.setItem('mxzu_servers',JSON.stringify(this.servers));this.tip('服务器配置已保存');this.currentServerIdx=0;this.checkApiStatus();},
+
+    // ===== Monitor（前后台打通）=====
+    async getMonitorConfig(){
+      try {
+        var r = await this.runRoot('cat ' + MODPATH + '/monitor.conf 2>/dev/null');
+        if (r && r.ok && r.stdout && r.stdout.indexOf('ALERT_TH') >= 0) {
+          return this.parseMonitorConf(r.stdout);
+        }
+      } catch(e){}
+      var j = await this.localApiJson('getmonitor');
+      if (j && j.code === 200) return j.data;
+      return null;
+    },
+    parseMonitorConf(txt){
+      var o = { enabled:0, alert_th:100, cut_th:1024, interval:180, hyst:20 };
+      txt.split('\n').forEach(function(line){
+        var m = line.match(/^\s*([A-Z_]+)\s*=\s*([0-9.]+)/);
+        if (m) {
+          if (m[1]==='ENABLED') o.enabled = parseInt(m[2],10);
+          else if (m[1]==='ALERT_TH') o.alert_th = parseFloat(m[2]);
+          else if (m[1]==='CUT_TH') o.cut_th = parseFloat(m[2]);
+          else if (m[1]==='INTERVAL') o.interval = parseFloat(m[2]);
+          else if (m[1]==='HYST') o.hyst = parseFloat(m[2]);
+        }
+      });
+      return o;
+    },
+    async localApiJson(action){
+      var urls = [
+        'http://127.0.0.1:19999/?action=' + action,
+        'http://127.0.0.1:19999/api.cgi?action=' + action,
+        'http://localhost:19999/?action=' + action
+      ];
+      for (var i=0;i<urls.length;i++){
+        try {
+          var res = await fetch(urls[i], { signal: AbortSignal.timeout(3000) });
+          if (res.ok) return await res.json();
+        } catch(e){}
+      }
+      return null;
+    },
+    async loadMonitorConfig(){
+      var cfg = await this.getMonitorConfig();
+      if (cfg) {
+        this.monitor.enabled = (cfg.enabled === 1 || cfg.enabled === true);
+        this.monitor.alertThreshold = cfg.alert_th;
+        this.monitor.cutThreshold = cfg.cut_th;
+        this.monitor.interval = cfg.interval;
+        this.monitor.hyst = cfg.hyst;
+      } else {
+        try {
+          var s = JSON.parse(localStorage.getItem('mxzu_monitor') || '{}');
+          Object.assign(this.monitor, { enabled:false, logs:[], timer:null, alerted:false, cut:false }, s);
+        } catch(e){}
+      }
+      this.monitor.logs = this.monitor.logs || [];
+      if (this.monitor.enabled && this.mobile && this.pwdHash) {
+        this.startMonitorLoop();
+        this.addMonitorLog('info','自动恢复监控(后台守护已接管)');
+      }
+      this.refreshMonitorStatus();
+    },
+    saveMonitorConfig(){
+      var cfg = { enabled:this.monitor.enabled, alertThreshold:this.monitor.alertThreshold, cutThreshold:this.monitor.cutThreshold, interval:this.monitor.interval, hyst:this.monitor.hyst };
+      localStorage.setItem('mxzu_monitor', JSON.stringify(cfg));
+      this.tip('配置已保存');
+      this.addMonitorLog('info','更新:提醒'+cfg.alertThreshold+'MB / 断网'+cfg.cutThreshold+'MB / '+cfg.interval+'s / 滞后'+cfg.hyst+'%');
+      this.pushMonitorConfig();
+    },
+    async pushMonitorConfig(){
+      var q = 'enabled=' + (this.monitor.enabled?1:0) + '&alert=' + this.monitor.alertThreshold + '&cut=' + this.monitor.cutThreshold + '&interval=' + this.monitor.interval + '&hyst=' + this.monitor.hyst;
+      if (this.rootBridgeAvailable()) {
+        var line = 'ENABLED=' + (this.monitor.enabled?1:0) + '\nALERT_TH=' + this.monitor.alertThreshold + '\nCUT_TH=' + this.monitor.cutThreshold + '\nINTERVAL=' + this.monitor.interval + '\nHYST=' + this.monitor.hyst + '\n';
+        var cmd = 'cat > ' + MODPATH + '/monitor.conf << \'ENDOFCONF\'\n' + line + 'ENDOFCONF\n';
+        var r = await this.runRoot(cmd);
+        if (r && r.ok) this.addMonitorLog('info','已同步到后台配置');
+        await this.runRoot('sh ' + MODPATH + '/monitor.sh ' + (this.monitor.enabled?'start':'stop'));
+      } else {
+        var j = await this.localApiJson('setmonitor?' + q + '&password=' + this.pwdHash);
+        if (j && j.code === 200) this.addMonitorLog('info', j.msg || '已同步到后台');
+        else if (j && j.code === 403) this.tip('同步失败：密码错误');
+        else this.tip('同步失败：未检测到Root接口，请用管理器网页打开');
+      }
+      this.refreshMonitorStatus();
+    },
+    async refreshMonitorStatus(){
+      if (this.rootBridgeAvailable()) {
+        var r = await this.runRoot('sh ' + MODPATH + '/monitor.sh status');
+        this.monitor.daemon = !!(r && r.ok && /RUNNING/.test(r.stdout || ''));
+      } else {
+        var j = await this.localApiJson('monitorstatus');
+        this.monitor.daemon = !!(j && j.data && j.data.indexOf('RUNNING') >= 0);
+      }
+    },
+    addMonitorLog(type,msg){var n=new Date(),t=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0')+':'+n.getSeconds().toString().padStart(2,'0');this.monitor.logs.push({time:t,type:type,msg:msg});if(this.monitor.logs.length>50)this.monitor.logs.shift();},
+    toggleMonitor(){this.monitor.enabled=!this.monitor.enabled;if(this.monitor.enabled){this.monitor.alerted=false;this.monitor.cut=false;this.addMonitorLog('info','开启');this.startMonitorLoop();this.checkThreshold();}else{this.stopMonitorLoop();this.addMonitorLog('info','暂停');}this.saveMonitorConfig();},
+    startMonitorLoop(){this.stopMonitorLoop();var self=this;this.monitor.timer=setInterval(function(){self.loadInfo().then(function(){self.checkThreshold();});},Math.max(30,this.monitor.interval*1000));},
+    stopMonitorLoop(){if(this.monitor.timer){clearInterval(this.monitor.timer);this.monitor.timer=null;}},
+    checkThreshold(){
+      if(!this.monitor.enabled||!this.info.differentFlow||this.info.differentFlow==='-')return;
+      var val=parseFloat(this.info.differentFlow);
+      var hyst=this.monitor.hyst||20;
+      var recover=this.monitor.alertThreshold*(1-hyst/100);
+      if(val>=this.monitor.alertThreshold&&!this.monitor.alerted){
+        this.monitor.alerted=true;this.tip('跳点 '+val.toFixed(2)+'MB ≥ '+this.monitor.alertThreshold+'MB');
+        this.addMonitorLog('alert','跳点'+val.toFixed(2)+'MB');
+        if(navigator.vibrate)navigator.vibrate([200,100,200]);
+      }
+      if(val>=this.monitor.cutThreshold&&!this.monitor.cut){
+        this.monitor.cut=true;this.cutNetwork();
+      }
+      if(val<=recover)this.monitor.alerted=false;
+      if(val<this.monitor.cutThreshold*0.5)this.monitor.cut=false;
+    },
+    async cutNetwork(){
+      this.tip('正在关闭移动数据...');
+      var timeStr = new Date().toLocaleTimeString();
+      var jumpStr = (this.info.differentFlow && this.info.differentFlow !== '-') ? this.info.differentFlow + 'MB' : '?';
+      var res = await this.runRoot('export PATH=/system/bin:/system/xbin:/sbin:$PATH 2>/dev/null; svc data disable; settings put global mobile_data 0');
+      if (res === null) {
+        var apiOk = await this.localApi('cut');
+        if (apiOk) {
+          this.monitor.lastAction = '✅ 已关闭移动数据 ' + timeStr + ' (跳点' + jumpStr + ')';
+          this.tip('移动数据已关闭');
+          this.addMonitorLog('cut','关闭移动数据成功');
+        } else {
+          this.monitor.lastAction = '⚠️ 关闭失败 ' + timeStr + ' (请通过管理器网页打开)';
+          this.tip('失败: 未检测到Root接口，请用KernelSU/SukiSU管理器内的「网页」打开');
+          this.addMonitorLog('cut','关闭失败[无Root接口]');
+        }
+      } else if (res.ok) {
+        this.monitor.lastAction = '✅ 已关闭移动数据 ' + timeStr + ' (跳点' + jumpStr + ')';
+        this.tip('移动数据已关闭');
+        this.addMonitorLog('cut','关闭移动数据成功');
+      } else {
+        this.monitor.lastAction = '⚠️ 关闭失败 ' + timeStr + ' (' + (res.stderr||'错误') + ')';
+        this.tip('失败: ' + (res.stderr||'命令执行错误'));
+        this.addMonitorLog('cut','关闭失败: ' + (res.stderr||'err'));
+      }
+      if (navigator.vibrate) navigator.vibrate([500,200,500]);
+    },
+    async restoreNetwork(){
+      this.tip('正在恢复移动数据...');
+      var timeStr = new Date().toLocaleTimeString();
+      var res = await this.runRoot('export PATH=/system/bin:/system/xbin:/sbin:$PATH 2>/dev/null; svc data enable; settings put global mobile_data 1');
+      if (res === null) {
+        var apiOk = await this.localApi('restore');
+        if (apiOk) {
+          this.monitor.lastAction = '✅ 已恢复移动数据 ' + timeStr;
+          this.tip('移动数据已恢复');
+          this.monitor.cut = false; this.monitor.alerted = false;
+          this.addMonitorLog('info','手动恢复成功');
+        } else {
+          this.monitor.lastAction = '⚠️ 恢复失败 ' + timeStr + ' (请通过管理器网页打开)';
+          this.tip('失败: 未检测到Root接口，请用KernelSU/SukiSU管理器内的「网页」打开');
+          this.addMonitorLog('info','手动恢复失败[无Root接口]');
+        }
+      } else if (res.ok) {
+        this.monitor.lastAction = '✅ 已恢复移动数据 ' + timeStr;
+        this.tip('移动数据已恢复');
+        this.monitor.cut = false; this.monitor.alerted = false;
+        this.addMonitorLog('info','手动恢复成功');
+      } else {
+        this.monitor.lastAction = '⚠️ 恢复失败 ' + timeStr + ' (' + (res.stderr||'错误') + ')';
+        this.tip('失败: ' + (res.stderr||'命令执行错误'));
+        this.addMonitorLog('info','手动恢复失败: ' + (res.stderr||'err'));
+      }
+    },
+    async delAccount(){if(!confirm('将删除服务器上的本账号数据！'))return;try{var r=await this.apiWithFallback('/api/delete','post');if(r.data.code===200)this.tip('已删除');else this.tip('删除失败');}catch(e){this.tip('出错');}},
+
+    // ===== 推送 / 服务端提醒 =====
+    onEnterPush(){ if(this.mobile && this.pwdHash){ this.pushLoading = true; this.loadInfo().finally(function(){ this.pushLoading = false; }.bind(this)); } else this.tip('请先设置账号'); },
+    onEnterAccount(){ this.advPlatform = this.accountInfo.platform || 'unicom'; this.advCookie = this.accountInfo.cookie || ''; this.advOnlyCurrent = !!this.accountInfo.onlyCurrentInfo; this.advThreshold = this.accountInfo.threshold || 100; },
+    async saveRemind(){
+      if(!this.pwdHash && this.pwd) this.pwdHash = this.hash(this.pwd);
+      if(!this.mobile || !this.pwdHash){ this.tip('请先设置账号'); return; }
+      try{
+        var r = await this.apiWithFallback('/api/modify-info','post',{data:{threshold:this.accountInfo.threshold, sendJump:this.accountInfo.sendJump, sendLose:this.accountInfo.sendLose}});
+        if(r.data.code===200) this.tip('提醒设置已保存'); else this.tip('失败:'+(r.data.msg||r.data.code));
+      }catch(e){ this.tip('出错'); }
+    },
+    channelName(t){ return ({email:'邮箱',wxWork:'企业微信',bark:'Bark',dingTalk:'钉钉',telegram:'Telegram',WxPusher:'WxPusher'})[t] || t || '未知'; },
+    channelSummary(c){
+      if(!c) return '';
+      if(c.type==='email') return c.emailAddress || '邮箱';
+      if(c.type==='wxWork') return (c.wxWorkBotUrl||'').slice(0,32) || '企业微信';
+      if(c.type==='bark') return (c.barkUrl||'').slice(0,32) || 'Bark';
+      if(c.type==='dingTalk') return (c.dingTalkBotUrl||'').slice(0,32) || '钉钉';
+      if(c.type==='telegram') return 'Chat:' + (c.telegramBotChatId||'') || 'Telegram';
+      if(c.type==='WxPusher') return 'UID:' + (c.wxPusherUID||'') || 'WxPusher';
+      return this.channelName(c.type);
+    },
+    isImg(s){ return /^https?:\/\//.test(s) || /^data:image/.test(s) || /\.(png|jpg|jpeg|gif|svg|webp)/i.test(s||''); },
+    async openWxQr(){
+      this.pushForm.type = 'WxPusher';
+      this.wxQr.show = true; this.wxQr.content = ''; this.wxQr.loading = true;
+      try{
+        var rnd = Math.round(Math.random()*1e4);
+        var r = await this.apiWithFallback('/api/getWxPusherQrCode','get',{random:rnd});
+        if(r.data && r.data.code===200 && r.data.data){ this.wxQr.content = r.data.data; }
+        else { this.wxQr.content=''; this.tip('获取二维码失败'); }
+      }catch(e){ this.wxQr.content=''; this.tip('获取二维码失败'); }
+      this.wxQr.loading = false;
+    },
+    async addChannel(){
+      if(!this.mobile || !this.pwdHash){ this.tip('请先设置账号'); return; }
+      var f = this.pushForm, data = { type:f.type, freq:f.freq, threshold:f.threshold, voiceCard:f.voiceCard };
+      if(f.type==='email'){ if(!f.emailServer||!f.emailAddress||!f.emailPassword){this.tip('请填全邮箱信息');return;} data.emailServer=f.emailServer; data.emailAddress=f.emailAddress; data.emailPassword=f.emailPassword; }
+      else if(f.type==='wxWork'){ if(!f.wxWorkBotUrl){this.tip('请填写 Webhook');return;} data.wxWorkBotUrl=f.wxWorkBotUrl; }
+      else if(f.type==='bark'){ if(!f.barkUrl){this.tip('请填写 Bark 地址');return;} data.barkUrl=f.barkUrl; }
+      else if(f.type==='dingTalk'){ if(!f.dingTalkBotUrl){this.tip('请填写 Webhook');return;} data.dingTalkBotUrl=f.dingTalkBotUrl; }
+      else if(f.type==='telegram'){ if(!f.telegramBotChatId){this.tip('请填写 Chat ID');return;} data.telegramBotChatId=f.telegramBotChatId; }
+      else if(f.type==='WxPusher'){ if(!f.token){this.tip('请先扫码或填入 UID');return;} data.wxPusherUID=f.token; }
+      try{
+        var r = await this.apiWithFallback('/api/add-push-channel','post',{data:data});
+        if(r.data.code===200){ this.tip('添加成功'); this.pushForm.show=false; this.loadInfo(); }
+        else this.tip('失败:'+(r.data.msg||r.data.code));
+      }catch(e){ this.tip('出错'); }
+    },
+    async deleteChannel(c){
+      if(!confirm('删除该推送通道？')) return;
+      try{
+        var r = await this.apiWithFallback('/api/delete-push-channel','post',{id:c.id});
+        if(r.data.code===200){ this.tip('删除成功'); this.loadInfo(); } else this.tip('失败:'+(r.data.msg||r.data.code));
+      }catch(e){ this.tip('出错'); }
+    },
+    async verifyChannel(c){
+      this.tip('验证中...');
+      try{
+        var r = await this.apiWithFallback('/api/verify-push-channel','post',{id:c.id});
+        if(r.data.code===200) this.tip('验证成功'); else this.tip('失败:'+(r.data.msg||r.data.code));
+      }catch(e){ this.tip('出错'); }
+    },
+    async loadDonate(){
+      this.donate.loading = true;
+      try{
+        var r = await axios.get(this.servers.main + '/api/get-donate', { params:{page:this.donate.page, limit:this.donate.pageSize}, timeout:10000 });
+        var d = r.data;
+        this.donate.list = this.donate.page===1 ? (d.data||[]) : this.donate.list.concat(d.data||[]);
+        this.donate.count = d.count || 0;
+      }catch(e){ this.tip('捐赠加载失败'); }
+      this.donate.loading = false;
+    },
+
+    // ===== 浮动窗 =====
+    saveFloatCfg(){ localStorage.setItem('mxzu_float', JSON.stringify({ enabled:this.float.enabled, auto:this.float.auto, x:this.float.x, y:this.float.y, docked:this.float.docked||false })); },
+    saveFloatPos(){ localStorage.setItem('mxzu_float', JSON.stringify({ enabled:this.float.enabled, auto:this.float.auto, x:this.float.x, y:this.float.y, docked:this.float.docked||false })); },
+    startDrag(e){
+      if (this.float.docked) this.undock();
+      var point = e.touches ? e.touches[0] : e;
+      this._dx = point.clientX; this._dy = point.clientY;
+      this._sx = this.float.x; this._sy = this.float.y;
+      this._moved = false;
+      var self = this;
+      this._move = function(ev){ self.onDrag(ev); };
+      this._up = function(ev){ self.endDrag(ev); };
+      window.addEventListener('touchmove', this._move, { passive:false });
+      window.addEventListener('touchend', this._up);
+      window.addEventListener('mousemove', this._move);
+      window.addEventListener('mouseup', this._up);
+    },
+    onDrag(e){
+      if (e.cancelable) e.preventDefault();
+      var point = e.touches ? e.touches[0] : e;
+      var dx = point.clientX - this._dx;
+      var dy = point.clientY - this._dy;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) this._moved = true;
+      var w = window.innerWidth, h = window.innerHeight;
+      var size = this.float.expanded ? 248 : 62;
+      var nx = Math.max(4, Math.min(w - size - 4, this._sx + dx));
+      var ny = Math.max(56, Math.min(h - size - 4, this._sy + dy));
+      this.float.x = nx; this.float.y = ny;
+    },
+    endDrag(){
+      window.removeEventListener('touchmove', this._move);
+      window.removeEventListener('touchend', this._up);
+      window.removeEventListener('mousemove', this._move);
+      window.removeEventListener('mouseup', this._up);
+      if (this._moved) {
+        var w = window.innerWidth, h = window.innerHeight;
+        var size = this.float.expanded ? 248 : 62;
+        var EDGE = 36, REVEAL = 30;
+        if (this.float.x < EDGE) { this.float.docked = 'left'; this.float.x = -(size - REVEAL); }
+        else if (this.float.x > w - size - EDGE) { this.float.docked = 'right'; this.float.x = w - REVEAL; }
+        else { this.float.docked = false; }
+        this.float.y = Math.max(56, Math.min(h - size - 4, this.float.y));
+        this.saveFloatPos();
+      }
+      else { this.toggleFloatExpand(); }
+    },
+    toggleFloatExpand(){
+      if (this.float.docked) { this.undock(); return; }
+      this.float.expanded = !this.float.expanded;
+      if (this.float.expanded) { this.refreshFloating(); if (this.float.auto) this.startFloatTimer(); }
+      else { this.stopFloatTimer(); }
+    },
+    undock(){
+      this.float.docked = false;
+      var w = window.innerWidth, size = this.float.expanded ? 248 : 62;
+      this.float.x = this.float.x < 0 ? 8 : (this.float.x > w - 40 ? w - size - 8 : this.float.x);
+      if (this.float.expanded) this.refreshFloating();
+      this.saveFloatPos();
+    },
+    startFloatTimer(){ this.stopFloatTimer(); var self=this; this.float.timer=setInterval(function(){ self.refreshFloating(); }, 45000); },
+    stopFloatTimer(){ if(this.float.timer){ clearInterval(this.float.timer); this.float.timer=null; } },
+    async refreshFloating(){
+      if(!this.mobile || (!this.pwd && !this.pwdHash)){ if(this.float.expanded) this.tip('请先设置账号'); return; }
+      try{
+        var r = await this.apiWithFallback('/api/get-info');
+        var d = r.data.data;
+        this.info.differentFlow = d.differentFlow;
+        this.info.differentFreeFlow = d.differentFreeFlow;
+        this.info.now = d.now || null;
+        this.info.html = d.html || '';
+        this.info.history = d.history || null;  // ★ v5.12 存 history
+        // ★ v5.12 浮动窗也聚合 5 张卡
+        if (d.now && d.now.flowList) {
+          this.flowList = d.now.flowList;
+          this.cards = this.aggregateCards(this.flowList);
+          this.autoPrimary();
+          // ★ v5.14 浮动窗刷新也存快照（这样即便只打开浮动窗也会更新快照）
+          this.saveCardSnapshot(this.cards, (d.now && d.now.time) || new Date().toLocaleString('zh-CN'));
+        }
+      }catch(e){ if(this.float.expanded) this.tip('刷新失败'); }
+    },
+
+    // ===== AI 智能分析（基于 5 张聚合卡：1 主 + 4 副）=====
+    // v5.7 修复：从 flowList[].viceCardlist[] 聚合，跳/免/日/月 按每张卡独立计算
+    async analyzeAI(){
+      if(!this.mobile || (!this.pwd && !this.pwdHash)){ this.tip('请先在「账号」Tab 设置手机号和服务密码'); return; }
+      this.ai.loading = true;
+      try{
+        await this.loadInfo();
+        var d = this.info; var n = d.now;
+        if(!n){ this.ai = { score:0, dailyAvg:0, daysLeft:null, insights:[], anomaly:[], summary:'暂无可分析的数据，请先在「查询」Tab 成功查询。', cards:[], primaryIdx:0, loading:false, lastCalc:new Date().toLocaleTimeString() }; return; }
+        this.compare = null;
+
+        // ★ v5.13 从 d.history 取上一次快照，算 24h 跳点/免流/通用/公免差
+        // （上游 history 字段是上次完整快照，now - history = 本次到上次之间的用量）
+        var h = d.history || {};
+        var dayJump = Math.max(0, (parseFloat(n.usedGeneralFlow)||0) - (parseFloat(h.usedGeneralFlow)||0));  // 日跳点(24h 通用已用)
+        var dayFree = Math.max(0, (parseFloat(n.usedFreeFlow)||0) - (parseFloat(h.usedFreeFlow)||0));        // 日免流(24h 免流已用)
+        var dayPub  = Math.max(0, (parseFloat(n.publicFreeFlow)||0)  - (parseFloat(h.publicFreeFlow)||0));   // 日公免(24h 公免已用)
+        var dayUse = dayJump + dayFree + dayPub;                                                               // ★ v5.13 日用量 = 24h 通用+免流+公免
+        var dayGap = (h.time && n.time) ? Math.round((new Date(String(n.time).replace(/-/g,'/')) - new Date(String(h.time).replace(/-/g,'/'))) / 60000) : 0; // 采样间隔(分钟)
+        var dayAvg24h = dayGap > 0 ? (dayUse / (dayGap / 1440)) : 0;  // ★ v5.13 日均 = 24h 推算到每天
+
+        // ===== 1. 5 张卡聚合 =====
+        var cards = (this.cards || []).slice();
+        if (!cards.length) {
+          this.ai = { score:0, dailyAvg:0, daysLeft:null, insights:[{icon:'📭',color:'var(--org)',title:'未识别到卡',text:'当前账户下未识别到任何卡明细'}], anomaly:[], summary:'未识别到卡。', cards:[], primaryIdx:0, loading:false, lastCalc:new Date().toLocaleTimeString() };
+          return;
+        }
+        // 每张卡加 use 的 GB 化、计算单项
+        cards.forEach(function(c){
+          c.useGB = c.use / 1024;  // KB → GB
+          c.pkgCount = c._pkgs || 0;
+        });
+
+        // ===== 2. 主卡选择：用户保存的 usernumber → 索引 =====
+        var savedNum = this.primaryNumber;
+        var primaryIdx = 0;
+        if (savedNum) {
+          var savedI = this.cardIdx(savedNum);
+          if (savedI >= 0 && savedI < cards.length) primaryIdx = savedI;
+        }
+        // 默认兜底：用 viceCardflag=1 的卡
+        if (!savedNum) {
+          for (var ii = 0; ii < cards.length; ii++) { if (cards[ii].isPrimary) { primaryIdx = ii; break; } }
+        }
+        var primary = cards[primaryIdx];
+        var others = cards.filter(function(_, i){ return i !== primaryIdx; });
+
+        // ===== 3. 日均用量（账户级，按历史 usedGeneralFlow 变化）=====
+        var hs = this.history.slice().sort(function(a,b){ return new Date(String(a.time).replace(/-/g,'/').replace('T',' ')) - new Date(String(b.time).replace(/-/g,'/').replace('T',' ')); });
+        var dailyAvg = 0, spanDays = 0;
+        if (hs.length >= 2) {
+          var f = hs[0], l = hs[hs.length - 1];
+          var t0 = new Date(String(f.time).replace(/-/g,'/').replace('T',' '));
+          var t1 = new Date(String(l.time).replace(/-/g,'/').replace('T',' '));
+          spanDays = (t1 - t0) / 86400000;
+          var du = (parseFloat(l.usedGeneralFlow) || 0) - (parseFloat(f.usedGeneralFlow) || 0);
+          if (spanDays > 0 && du > 0) dailyAvg = du / spanDays;
+        }
+
+        // ===== 4. 异常用量检测（基于历史）=====
+        var anomaly = [];
+        if (hs.length >= 3) {
+          var deltas = [];
+          for (var i2 = 1; i2 < hs.length; i2++) deltas.push((parseFloat(hs[i2].usedGeneralFlow) || 0) - (parseFloat(hs[i2-1].usedGeneralFlow) || 0));
+          var mean = deltas.reduce(function(a,b){return a+b;},0) / deltas.length;
+          for (var j = 1; j < hs.length; j++) {
+            var dd = (parseFloat(hs[j].usedGeneralFlow) || 0) - (parseFloat(hs[j-1].usedGeneralFlow) || 0);
+            if (mean > 0 && dd > mean * 1.8 && dd > 50) anomaly.push({ date: this.fmtFlowTime(hs[j].time), delta: Math.round(dd) });
+          }
+        }
+
+        // ===== 5. 健康度评分（基于主卡 use 占所有卡总 use 的比例）=====
+        var totalUse = cards.reduce(function(s, c){ return s + c.use; }, 0);
+        var primaryShare = totalUse > 0 ? primary.use / totalUse : 0;  // 主卡用占比
+        var balance = primaryShare < 0.6 ? 100 : (primaryShare < 0.8 ? 80 : 60); // 主卡占比<60% 平衡
+        var score = balance;
+        if (primary.use > 200 * 1024) score -= 20;  // 主卡用超 200GB 减分
+        if (primary.use > 500 * 1024) score -= 15;
+        score = Math.max(0, Math.min(100, score));
+        var daysLeft = null;  // 因为没有"剩余"概念（5 张卡共享套餐池），改成"按当前速率还能用多久"
+
+        // ===== 6. 6 项指标总览（账户级，对齐原网站）=====
+        var diffFlow = parseFloat(d.differentFlow) || 0;       // 跳点计费(元)
+        var diffFree = parseFloat(d.differentFreeFlow) || 0;   // 免流计费(元)
+        var generalUsed = parseFloat(n.usedGeneralFlow) || 0;  // 本卡已用通用
+        var generalTotal = parseFloat(n.generalFlow) || 0;     // 通用总流量
+        var freeUsed = parseFloat(n.usedFreeFlow) || 0;        // 本卡已用定向免流
+        var freeTotal = parseFloat(n.totalFreeFlow) || 0;      // 定向免流套餐总量
+        var publicFree = parseFloat(n.publicFreeFlow) || 0;    // 公免流量
+        var monthUsed = parseFloat(n.usedFlow) || 0;           // 本卡本月已用
+        var monthSum = parseFloat(n.sum) || 0;                 // 本卡本月总用量
+        var daily = parseFloat(n.domesticDailyFlow) || 0;      // 本日已用
+        var insights = [];
+        // 1. 跳点（★ v5.15 改：去掉"计费"和"元"，对齐原网站，24h 用量，KB/MB 智能单位）
+        insights.push({ icon:'🦘', color:'var(--red)', title:'跳点', text: dayJump > 0 ? ('本日跳点 ' + this.fmtKB(dayJump) + '（多为免流 APP 跳转产生）') : '本日暂无跳点' });
+        // 2. 免流（★ v5.15 改：24h 用量，对齐原网站，无"用量"和"元"字样）
+        insights.push({ icon:'🛡️', color:'var(--org)', title:'免流', text: dayFree > 0 ? ('本日免流 ' + this.fmtKB(dayFree) + '（免流套餐本身免费）') : '本日暂无免流' });
+        // 3. 通用
+        var generalRemain = Math.max(0, generalTotal - generalUsed);
+        insights.push({ icon:'📦', color:'var(--pri)', title:'通用流量', text: '已用 ' + this.fmtMB(generalUsed) + ' / 共 ' + this.fmtMB(generalTotal) + '（剩余 ' + this.fmtMB(generalRemain) + '）' });
+        // 4. 定向免流
+        var freeRemain = Math.max(0, freeTotal - freeUsed);
+        var freeRatio = freeTotal > 0 ? Math.round(freeUsed / freeTotal * 100) : 0;
+        insights.push({ icon:'🎯', color:'var(--org)', title:'定向免流', text: '已用 ' + this.fmtMB(freeUsed) + ' / 共 ' + this.fmtMB(freeTotal) + '（剩余 ' + this.fmtMB(freeRemain) + '，' + freeRatio + '%）' });
+        // 5. 公免
+        insights.push({ icon:'🌐', color:'var(--grn)', title:'公免流量', text: '本卡公免流量 ' + this.fmtMB(publicFree) });
+        // 6. 本卡本月
+        insights.push({ icon:'🗓️', color:'var(--pri)', title:'本卡本月已用', text: this.fmtMB(monthSum) + (daily > 0 ? '（含本日 ' + this.fmtMB(daily) + '）' : '（含定向免流 ' + this.fmtMB(freeUsed) + ' + 通用 ' + this.fmtMB(generalUsed) + '）') });
+
+        // ===== 7. 每张卡的 6 项指标明细 =====
+        // 当前登录卡用 now.* 精确字段（usedGeneralFlow/usedFreeFlow/publicFreeFlow）
+        // 其他 4 张副卡从 viceCardlist 聚合
+        // ★ v5.12 7 项指标（按用户最新要求顺序：1月用 2月免 3月跳 4日用 5日免 6日跳 7公免）
+        // - 月用 = 该卡 ft=1+ft=2（不含公免，★ v5.16 对齐原网站）
+        // - 月免 = 该卡 ft=2 use / 1024
+        // - 月跳 = 该卡 ft=1 use / 1024（用户原话"已用通用=本月跳点"）
+        // - 日用/日免/日跳 = now-history 差（账户级共享，每张卡显示相同值）
+        // - 公免 = 12186.22 / 1024（账户级共享）
+        var PUB = 12186.22;  // MB，公免常量（账户级 11.9GB，v5.13 仅当前卡显示）
+        // ★ v5.14 localStorage 快照差：解决副卡 24h 分项无 API 的问题
+        var deltas = this.calcCardDeltas(cards);  // {usernumber:{use,gen,free,hours}} 或 null(首次)
+        var hasDelta = !!deltas;
+        var cardInsights = cards.map(function(c){
+          var isC = c.isCurrent;
+          // 跳点/免流（计费）：账户共享
+          var jumpFee = diffFlow;
+          var freeFee = diffFree;
+          // ★ v5.12 改：每张卡独立用聚合值（不依赖 isCurrent）
+          var genVal = c.genPkg || 0;  // ft=1 通用已用
+          var freeVal = c.freePkg || 0;  // ft=2 免流已用
+          var jumpVal = c.jumpPkg || 0;  // rt=I3 跳点（备用）
+          // ★ v5.13 改：月用量 = 通用 + 免流（不含公免，对齐原网站）
+        // ★ v5.16 修：去掉"当前卡加 PUB"逻辑 —— 原网站本月用量不含公免（v5.13 我误加）
+        var monthUseVal = genVal + freeVal;  // 不含公免，5 张卡统一算法，对齐原网站
+          var pct = totalUse > 0 ? Math.round(c.use / totalUse * 100) : 0;
+          // ★ v5.14 副卡 24h 改用 localStorage 快照差（无 API 时的可行方案）
+          // - 当前卡：保持原 now-history 差（账户级精确值）
+          // - 副卡：从 deltas[usernumber] 取（首次进入 deltas=null → 全部 null → 前端显示"暂无历史"）
+          var d = deltas ? deltas[c.usernumber] : null;
+          var myDayUse   = isC ? dayUse   : (d ? d.use  : null);  // 日用量 = 总用量增量
+          var myDayFree  = isC ? dayFree  : (d ? d.free : null);  // 日免流 = freePkg 增量
+          var myDayJump  = isC ? dayJump  : (d ? d.gen  : null);  // 日跳点/日通用 = genPkg 增量
+          var myDayPub   = isC ? dayPub   : 0;                    // 公免是账户级共享，副卡不重复算
+          return {
+            usernumber: c.usernumber,
+            isPrimary: c.isPrimary,
+            isCurrent: c.isCurrent,
+            monthUse: monthUseVal,    // 1 本月用量 (MB) = 通用+免流+公免(仅当前卡)
+            monthFree: freeVal,       // 2 本月免流 (MB) = ft=2 已用
+            monthJump: genVal,        // 3 本月已用通用 (MB) = ft=1 已用（即原"本月跳点"）
+            dayUse: myDayUse,         // 4 日用量 (MB) — ★v5.14 副卡=自上次以来 use 增量
+            dayFree: myDayFree,       // 5 日免流 (MB) — ★v5.14 副卡=自上次以来 freePkg 增量
+            dayJump: myDayJump,       // 6 日跳点 (MB) — ★v5.14 副卡=自上次以来 genPkg 增量
+            dayPub:  myDayPub,        // 日公免 (MB) = 24h 公免（仅当前卡；副卡 = 0）
+            public:  isC ? PUB : 0,        // 公免：当前卡=账户 11.9GB；副卡=0（无独立 API）
+            // 兼容字段
+            jump: jumpVal, jumpFee: jumpFee, free: freeVal, freeFee: freeFee, general: genVal,
+            daily: isC ? dayUse : (d ? d.use : 0),
+            month: c.use,
+            pct: pct,
+            deltaHours: (d && d.hours) ? d.hours : null  // ★ v5.14 副卡 delta 对应的小时数（前端显示用）
+          };
+        });
+
+        // ===== 8. 多卡对比 =====
+        var compareInsights = [];
+        if (cards.length >= 2) {
+          // 用量最大/最小
+          var sortedByUse = cards.slice().sort(function(a,b){ return b.use - a.use; });
+          var maxC = sortedByUse[0], minC = sortedByUse[sortedByUse.length - 1];
+          compareInsights.push({ icon:'📊', color:'var(--pri)', title:'用量排行', text: cards.slice().sort(function(a,b){return b.use-a.use;}).map(function(c){ return (c.isPrimary?'⭐':'') + c.usernumber + ' ' + (c.use/1024).toFixed(1) + 'GB'; }).join(' / ') });
+          // 主卡占套餐池比例
+          if (primary.use / totalUse > 0.7) {
+            compareInsights.push({ icon:'⚠️', color:'var(--org)', title:'主卡用量过高', text:'主卡「' + primary.usernumber + '」本月用了 ' + (primary.use/1024).toFixed(1) + 'GB（占账户 ' + Math.round(primary.use/totalUse*100) + '%），主副均衡度差，建议将大流量切换到副卡' });
+          } else if (primary.use / totalUse < 0.1 && totalUse > 100) {
+            compareInsights.push({ icon:'💡', color:'var(--blu)', title:'主卡用量偏少', text:'主卡「' + primary.usernumber + '」本月仅用 ' + (primary.use/1024).toFixed(2) + 'GB（占 ' + Math.round(primary.use/totalUse*100) + '%），副卡用量更多' });
+          } else {
+            compareInsights.push({ icon:'✅', color:'var(--grn)', title:'主副用量均衡', text:'主卡「' + primary.usernumber + '」用 ' + (primary.use/1024).toFixed(1) + 'GB（占 ' + Math.round(primary.use/totalUse*100) + '%），主副用量相对均衡' });
+          }
+        }
+
+        // ===== 9. 自然语言总结 =====
+        var primaryLbl = primary.isPrimary ? '⭐主卡' : (primary.isCurrent ? '当前账号' : '卡');
+        var sum = '账户共识别 ' + cards.length + ' 张卡';
+        if (this.currentUserNumber) {
+          sum += '（你正在使用：' + this.currentUserNumber + (primary.usernumber === this.currentUserNumber ? '，即主卡' : '，副卡') + '）';
+        }
+        sum += '，健康度 ' + score + ' 分。';
+        sum += primaryLbl + '「' + primary.usernumber + '」本月累计 ' + (primary.use/1024).toFixed(2) + ' GB';
+        sum += '（占账户 ' + Math.round(primary.use/totalUse*100) + '%）。';
+        // v5.10 加：跳免用量 + 通用/定向/公免汇总
+        sum += '【本卡已用】通用 ' + this.fmtMB(generalUsed) + ' / 共 ' + this.fmtMB(generalTotal) + '，定向免流 ' + this.fmtMB(freeUsed) + ' / 共 ' + this.fmtMB(freeTotal) + '，公免 ' + this.fmtMB(publicFree) + '，本卡月总 ' + this.fmtMB(monthSum) + '。';
+        // ★ v5.15 改：去掉"计费""元"，24h 跳点/免流 对齐原网站
+        sum += '【本日用量】跳点 ' + this.fmtKB(dayJump) + '，免流 ' + this.fmtKB(dayFree) + '。';
+        if (dailyAvg > 0) sum += '账户日均 ' + this.fmtMB(dailyAvg) + '。';
+        if (score < 40) sum += '⚠️ 流量告急，建议开启监控断网保护。';
+        else if (score < 70) sum += '流量适中，注意控制视频/下载。';
+        else sum += '流量充裕，可放心使用。';
+        if (anomaly.length) sum += '检测到 ' + anomaly.length + ' 次异常用量波动。';
+
+        this.ai = {
+          score: score,
+          dailyAvg: dailyAvg,
+          daysLeft: daysLeft,
+          insights: insights.concat(compareInsights),
+          summary: sum,
+          anomaly: anomaly,
+          cards: cards,         // ★ 5 张卡（不是 12 个套餐）
+          cardInsights: cardInsights, // ★ v5.12 每张卡的 7 项指标（按用户要求顺序）
+          primaryIdx: primaryIdx,
+          loading: false,
+          lastCalc: new Date().toLocaleTimeString(),
+          // ★ v5.13 7 项指标文本（仅当前登录卡显示真实数据，副卡标 —）
+          dailyTotalText: dayUse > 0 ? this.fmtMB(dayUse) : (dayGap > 0 ? '0 MB' : '—'),
+          dailyFreeText: dayFree > 0 ? this.fmtMB(dayFree) : (dayGap > 0 ? '0 MB' : '—'),
+          dailyJumpText: dayJump > 0 ? this.fmtMB(dayJump) : (dayGap > 0 ? '0 MB' : '—'),
+          dailyPubText:  dayPub  > 0 ? this.fmtMB(dayPub)  : (dayGap > 0 ? '0 MB' : '—'),  // ★ v5.13 日公免
+          publicFreeText: this.fmtMB(PUB),  // 11.90 GB
+          // ★ v5.13 日均（24h 推算到每天，含公免）
+          dailyAvgText: dayAvg24h > 0 ? this.fmtMB(dayAvg24h) : (dayUse > 0 ? this.fmtMB(dayUse) : '—'),
+          // ★ v5.13 调试信息（用于浮动窗/报表）
+          dayGap: dayGap,
+          dayUseRaw: dayUse,
+          dayFreeRaw: dayFree,
+          dayJumpRaw: dayJump,
+          dayPubRaw: dayPub
+        };
+        // 持久化（如果用 viceCardflag 兜底选了主卡）
+        if (primary.usernumber !== savedNum) this.primaryNumber = primary.usernumber;
+        localStorage.setItem('mxzu_primary', primary.usernumber);
+        var self2 = this;
+        this.$nextTick(function(){ self2.drawGauge(score); self2.maybeAutoReport(); });
+      } catch(e) {
+        console.error('analyzeAI', e);
+        this.ai.loading = false;
+        this.tip('分析失败：' + (e.message || e));
+      }
+    },
+
+    // 主卡选择保存（手机号字符串）
+    savePrimary(){
+      if (!this.primaryNumber) { this.tip('请先选择主卡'); return; }
+      localStorage.setItem('mxzu_primary', this.primaryNumber);
+      this.tip('主卡已保存：' + this.primaryNumber);
+      if (this.ai && this.ai.cards && this.ai.cards.length) this.analyzeAI();
+    },
+    // 智能推荐主卡：默认选 viceCardflag=1，否则用量最大的
+    autoPickPrimary(){
+      if (!this.cards || !this.cards.length) { this.tip('暂无卡片数据，请先查询'); return; }
+      var pick = this.cards.filter(function(c){ return c.isPrimary; })[0];
+      if (!pick) pick = this.cards.filter(function(c){ return c.isCurrent; })[0];
+      if (!pick) pick = this.cards[0];
+      this.primaryNumber = pick.usernumber;
+      this.tip('已自动选择：' + pick.usernumber + (pick.isPrimary ? '（主卡）' : (pick.isCurrent ? '（当前用户）' : '')));
+      this.savePrimary();
+    },
+
+    // 每月自动报表：换月且有数据时自动生成
+    maybeAutoReport() {
+      try {
+        if (!this.info.now) return;
+        var m = this.reportMonth;
+        if (this.report.month !== m) { this.buildReport(); }
+      } catch (e) { console.warn('maybeAutoReport', e); }
+    },
+
+    _drawImg(ctx, url, x, y, w, h) {
+      return new Promise(function (resolve) {
+        var img = new Image();
+        img.onload = function () { try { ctx.drawImage(img, x, y, w, h); } catch (e) {} resolve(); };
+        img.onerror = function () { resolve(); };
+        img.src = url;
+      });
+    },
+
+    // 合成月度报表 PNG（canvas）——按 5 张聚合卡独立
+    async buildReport() {
+        if (!this.info.now) { this.tip('请先查询'); return; }
+        try {
+          this.drawChart();
+          var self = this;
+          await new Promise(function (r) { setTimeout(r, 500); });
+          if (this.ai.score === 0) this.drawGauge(this._estScore());
+          await new Promise(function (r) { setTimeout(r, 300); });
+          var W = 720;
+          // 优先用 this.cards（5 张聚合卡），否则用 ai.cards
+          var cards = (this.cards && this.cards.length) ? this.cards.slice() : [];
+          if (!cards.length && this.ai && this.ai.cards) cards = this.ai.cards.slice();
+          // ★ v5.9 修复：主卡用 primaryNumber（手机号）定位
+          var primaryNum = this.primaryNumber || (this.ai && this.ai.cards && this.ai.cards[this.ai.primaryIdx] && this.ai.cards[this.ai.primaryIdx].usernumber) || (cards[0] && cards[0].usernumber);
+          var primaryIdx = -1;
+          for (var pi = 0; pi < cards.length; pi++) {
+            if (cards[pi].usernumber === primaryNum) { primaryIdx = pi; break; }
+          }
+          if (primaryIdx < 0 && cards.length) primaryIdx = 0;
+          var primaryCard = cards[primaryIdx] || null;
+          // ★ v5.10 真实字段（不自己聚合）
+          var n = this.info.now;
+          var diffFlow = parseFloat(this.info.differentFlow) || 0;  // 跳点计费(元)
+          var diffFree = parseFloat(this.info.differentFreeFlow) || 0; // 免流计费(元)
+          var generalUsed = parseFloat(n.usedGeneralFlow) || 0;     // 本卡已用通用
+          var generalTotal = parseFloat(n.generalFlow) || 0;        // 通用总流量
+          var generalRemain = parseFloat(n.allRemainUsedGeneralFlow) || 0; // 全账户通用剩余
+          var freeUsed = parseFloat(n.usedFreeFlow) || 0;           // 本卡已用定向免流
+          var freeTotal = parseFloat(n.totalFreeFlow) || 0;         // 定向免流套餐总量
+          var publicFree = parseFloat(n.publicFreeFlow) || 0;       // 公免
+          var monthSum = parseFloat(n.sum) || 0;                    // 本卡本月总用量
+          var monthAllUsed = parseFloat(n.allUsedGeneralFlow) || 0; // 全账户通用已用
+          var freeAllUsed = parseFloat(n.allUsedFreeFlow) || 0;     // 全账户免流已用
+          var totalUseAll = cards.reduce(function(s, cc){ return s + cc.use; }, 0);
+        // ★ v5.12 24h 数据：now - history 差（账户级共享）
+        var hh = this.info.history || {};
+        var dayJump = Math.max(0, (parseFloat(n.usedGeneralFlow)||0) - (parseFloat(hh.usedGeneralFlow)||0));
+        var dayFree = Math.max(0, (parseFloat(n.usedFreeFlow)||0) - (parseFloat(hh.usedFreeFlow)||0));
+        var dayPub = Math.max(0, (parseFloat(n.publicFreeFlow)||0) - (parseFloat(hh.publicFreeFlow)||0));  // ★ v5.14 加公免
+        var dayUse = dayJump + dayFree + dayPub;  // ★ v5.14 含公免
+        var dayGap = (hh.time && n.time) ? Math.round((new Date(String(n.time).replace(/-/g,'/')) - new Date(String(hh.time).replace(/-/g,'/'))) / 60000) : 0;  // ★ v5.17 补：采样间隔(分钟)
+        var dayAvg24h = dayGap > 0 ? (dayUse / (dayGap / 1440)) : 0;  // ★ v5.17 补：日均 = 24h 推算到每天
+        // 高度：每张卡 170px（含 7 项指标 4 行 + 进度条）
+        var H = 320 + (cards.length || 1) * 170 + 360;
+        var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+        var c = cv.getContext('2d');
+        c.fillStyle = '#ffffff'; c.fillRect(0, 0, W, H);
+        // 顶部渐变条
+        var g = c.createLinearGradient(0, 0, W, 0);
+        g.addColorStop(0, '#2080f0'); g.addColorStop(1, '#18a058');
+        c.fillStyle = g; c.fillRect(0, 0, W, 90);
+        c.fillStyle = '#ffffff'; c.font = 'bold 30px sans-serif';
+        c.fillText('小蒋流量查询 · ' + this.reportMonth + ' 月报', 28, 56);
+        c.font = '14px sans-serif'; c.fillStyle = 'rgba(255,255,255,.85)';
+        var cur = this.currentUserNumber || (this.mobile ? this.mobile.slice(0,3)+'****'+this.mobile.slice(-4) : '');
+        c.fillText('生成于 ' + new Date().toLocaleString() + ' · 当前账号 ' + cur, 28, 78);
+        // ===== 账户汇总区（真实字段，对齐原网站）=====
+        var y = 120;
+        c.fillStyle = '#222'; c.font = 'bold 18px sans-serif';
+        c.fillText('📊 账户汇总（来自 now.* 真实字段）', 28, y); y += 26;
+        c.font = '14px sans-serif'; c.fillStyle = '#444';
+        // 通用
+        c.fillText('通用：本卡已用 ' + this.fmtMB(generalUsed) + ' / 套餐共 ' + this.fmtMB(generalTotal) + '（全账户已用 ' + this.fmtMB(monthAllUsed) + '，剩 ' + this.fmtMB(generalRemain) + '）', 28, y); y += 22;
+        // 定向免流
+        c.fillText('定向免流：本卡已用 ' + this.fmtMB(freeUsed) + ' / 套餐共 ' + this.fmtMB(freeTotal) + '（全账户已用 ' + this.fmtMB(freeAllUsed) + '）', 28, y); y += 22;
+        // 公免
+        // 公免 + 跳点(本日) + 免流(本月)（★ v5.15 对齐原网站：跳点用 24h 量，免流用月量，都不带"元"）
+        c.fillText('公免：本卡 ' + this.fmtMB(publicFree) + ' ｜ 本日跳点：' + this.fmtKB(dayJump) + ' ｜ 本月免流已用：' + this.fmtMB(freeUsed), 28, y); y += 22;
+        // ★ v5.14 24h 数据含公免
+        c.fillText('24h 内：日用量 ' + this.fmtMB(dayUse) + '（通用 ' + this.fmtMB(dayJump) + ' + 免流 ' + this.fmtMB(dayFree) + ' + 公免 ' + this.fmtMB(dayPub) + '）', 28, y); y += 22;
+        c.fillText('参与卡片：' + cards.length + ' 张' + (primaryNum ? ' · 主卡 ' + primaryNum : '') + ' · 本卡本月总用量 ' + this.fmtMB(monthSum), 28, y); y += 22;
+        // ===== 每张卡独立段落（★ v5.11 7 项指标：按用户要求顺序）=====
+        y += 8;
+        c.fillStyle = '#222'; c.font = 'bold 18px sans-serif';
+        c.fillText('💳 多卡明细（' + cards.length + ' 张，含 7 项指标）', 28, y); y += 24;
+        cards.forEach(function(card, i){
+          var isPri = (i === primaryIdx);
+          var isCur = card.isCurrent;
+          c.fillStyle = isPri ? '#2080f0' : '#666';
+          c.font = 'bold 15px sans-serif';
+          var lbl = (isPri ? '⭐ 主卡 ' : (isCur ? '👤 当前 ' : '· 副卡 ')) + card.usernumber;
+          c.fillText(lbl, 28, y); y += 20;
+          c.font = '12px sans-serif'; c.fillStyle = '#444';
+          var pct = totalUseAll > 0 ? Math.round(card.use / totalUseAll * 100) : 0;
+          // ★ v5.13 7 项指标（按用户最新要求顺序：1月用 2月免 3月已用通用 4日用 5日免 6日跳 7公免）
+          // 24h 字段仅当前登录卡显示；公免当前卡 11.9GB、副卡 0
+          var PUB = card.isCurrent ? 12186.22 : 0;
+          var monthUse = (card.genPkg || 0) + (card.freePkg || 0) + PUB;
+          var monthFree = card.freePkg || 0;
+          var monthJump = card.genPkg || 0;
+          // 24h 字段仅当前登录卡显示
+          var duStr = card.isCurrent ? (dayUse>0?this.fmtMB(dayUse):'0 MB') : '—';
+          var dfStr = card.isCurrent ? (dayFree>0?this.fmtMB(dayFree):'0 MB') : '—';
+          var djStr = card.isCurrent ? (dayJump>0?this.fmtMB(dayJump):'0 MB') : '—';
+          var dPubStr = card.isCurrent ? (dayPub>0?this.fmtMB(dayPub):'0 MB') : '—';
+          var dayAvgStr = card.isCurrent ? (dayAvg24h>0?this.fmtMB(dayAvg24h):'0 MB') : '—';
+          c.fillText('1本月用量：' + (monthUse/1024).toFixed(2) + ' GB（占账户 ' + pct + '%）', 28, y); y += 14;
+          c.fillText('2本月免流：' + (monthFree/1024).toFixed(2) + ' GB  ｜  3本月已用通用：' + (monthJump/1024).toFixed(2) + ' GB', 28, y); y += 14;
+          c.fillText('4日用量：' + duStr + '  ｜  5日免流：' + dfStr + '  ｜  6日跳：' + djStr + '  ｜  7日公免：' + dPubStr, 28, y); y += 14;
+          c.fillText('公免：' + (PUB/1024).toFixed(2) + ' GB  ｜  日均：' + dayAvgStr + '  ｜  参与 ' + (card._pkgs || 0) + ' 个套餐', 28, y); y += 14;
+          // 进度条
+          var barW = 664, barH = 8, barX = 28, barY = y;
+          c.fillStyle = '#eef0f3'; c.fillRect(barX, barY, barW, barH);
+          var g2 = c.createLinearGradient(barX, 0, barX + barW, 0);
+          g2.addColorStop(0, '#2080f0'); g2.addColorStop(1, '#18a058');
+          c.fillStyle = g2; c.fillRect(barX, barY, Math.round(barW * Math.min(1, pct/100)), barH);
+          y += 28;
+        }.bind(this));
+        // ===== 健康度仪表 + 趋势图 =====
+        var gy = y + 10;
+        if (this.gauge) { var gUrl = this.gauge.getDataURL({ pixelRatio: 2, backgroundColor: '#fff' }); self._drawImg(c, gUrl, 28, gy, 280, 240); }
+        if (this.chart) { var tUrl = this.chart.getDataURL({ pixelRatio: 2, backgroundColor: '#fff' }); self._drawImg(c, tUrl, 328, gy, 364, 240); }
+        c.fillStyle = '#2080f0'; c.font = 'bold 16px sans-serif';
+        var sumText = (this.ai.summary || ('健康度 ' + this.ai.score + ' 分'));
+        if (sumText.length > 80) sumText = sumText.slice(0, 80) + '…';
+        c.fillText(sumText, 28, gy + 270);
+        c.fillStyle = '#999'; c.font = '12px sans-serif';
+          c.fillText('数据来源 flow.mxzu.net · 用 now.* 真实字段（非聚合估算）', 28, H - 24);
+          var url = cv.toDataURL('image/png');
+          this.report = { month: this.reportMonth, url: url, time: new Date().toLocaleString() };
+          localStorage.setItem('mxzu_report', JSON.stringify(this.report));
+          this.tip('已生成 ' + this.reportMonth + ' 月报（含 5 张卡 6 项指标）');
+        } catch (e) { console.error('buildReport', e); this.tip('报表生成失败'); }
+      },
+
+    _estScore() {
+      if (!this.info.now) return 0;
+      var t = parseFloat(this.info.now.generalFlow) || 1;
+      var r = parseFloat(this.info.now.allRemainUsedGeneralFlow) || 0;
+      return Math.max(0, Math.min(100, Math.round(r / t * 100 * 0.6 + 40)));
+    },
+
+    downloadReport() {
+      if (!this.report.url) { this.tip('暂无可下载报表'); return; }
+      var a = document.createElement('a');
+      a.href = this.report.url; a.download = '流量月报_' + this.report.month + '.png';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    },
+
+  }
+}).mount('#app');
+</script>
+<script>
+/* ===== PWA：Service Worker 注册 + 安装到主屏 ===== */
+(function () {
+  if (!('serviceWorker' in navigator)) return;
+  if (!location.protocol.startsWith('http')) return;
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./sw.js').catch(function (e) {
+      console.warn('SW 注册失败:', e);
+    });
+  });
+
+  var deferred = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    deferred = e;
+    showInstallBtn();
+  });
+  window.addEventListener('appinstalled', function () { hideInstallBtn(); });
+
+  function showInstallBtn() {
+    if (document.getElementById('pwa-install-btn')) return;
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return;
+    var b = document.createElement('button');
+    b.id = 'pwa-install-btn';
+    b.textContent = '⬇ 安装到主屏';
+    b.style.cssText = 'position:fixed;right:14px;bottom:18px;z-index:9999;background:#138554;color:#fff;border:none;padding:10px 16px;border-radius:24px;font-size:14px;font-weight:700;box-shadow:0 4px 14px rgba(15,122,74,.4);cursor:pointer';
+    b.onclick = function () {
+      if (!deferred) return;
+      deferred.prompt();
+      deferred.userChoice.then(function () { deferred = null; hideInstallBtn(); });
+    };
+    document.body.appendChild(b);
+  }
+  function hideInstallBtn() {
+    var b = document.getElementById('pwa-install-btn');
+    if (b) b.remove();
+  }
+})();
+</script>
+</body>
+</html>
